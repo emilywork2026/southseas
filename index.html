@@ -414,6 +414,7 @@ textarea{resize:vertical;min-height:72px;}
       <div class="form-group"><label class="form-label">P Hours</label><input type="text" id="m-p" placeholder="0.0"></div>
     </div>
     <div class="form-group"><label class="form-label">Notes (append)</label><textarea id="m-notes" placeholder="Add any update notes…"></textarea></div>
+    <div class="form-group"><label class="form-label">Customer email <span style="font-size:10px;color:var(--muted);font-weight:400">(saves to sheet — used for pickup notification)</span></label><input type="email" id="m-email" placeholder="customer@email.com"></div>
     <div class="btn-row">
       <button class="btn btn-primary" onclick="saveUpdate()">Save update</button>
       <button class="btn btn-warn" onclick="openNotifyFromUpdate()">Notify customer</button>
@@ -815,6 +816,7 @@ function openUpdate(job) {
   document.getElementById('m-payment').value =job.payment||'';
   document.getElementById('m-out').value     ='';
   document.getElementById('m-notes').value   ='';
+  document.getElementById('m-email').value   =job.email||'';
   document.getElementById('modal-update').classList.add('open');
 }
 
@@ -836,7 +838,10 @@ async function saveUpdate() {
     b:        document.getElementById('m-b').value,
     p:        document.getElementById('m-p').value,
     payment:  document.getElementById('m-payment').value,
+    email:    document.getElementById('m-email').value.trim(),
   };
+  // Update local job object with new email so Notify modal gets it
+  if(payload.email) currentJob.email = payload.email;
   const res=await api('updateStatus',payload);
   if(res.ok){ toast('Job updated successfully'); closeModal(); doSearch(); }
   else toast('Error: '+(res.error||'Unknown error'));
