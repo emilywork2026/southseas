@@ -673,6 +673,7 @@ async function doSearch() {
 
 function jobCard(j) {
   const sp=statusPill(j.status); const hrs=j.hrs>0?`${j.hrs} hrs`:'';
+  const key=storeJob(j);
   return `<div class="job-card" onclick="toggleJobCard(this)">
     <div class="job-top">
       <div>
@@ -698,8 +699,8 @@ function jobCard(j) {
       </div>
       ${j.notes?`<div class="notes-box">${esc(j.notes)}</div>`:''}
       <div class="btn-row">
-        <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();openUpdate(${JSON.stringify(j).replace(/"/g,'&quot;')})">Update status</button>
-        <button class="btn btn-warn btn-sm" onclick="event.stopPropagation();openNotify(${JSON.stringify(j).replace(/"/g,'&quot;')})">Notify</button>
+        <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();openUpdateKey('${key}')">Update status</button>
+        <button class="btn btn-warn btn-sm" onclick="event.stopPropagation();openNotifyKey('${key}')">Notify</button>
         ${j.contact?`<a class="btn btn-sm" href="tel:${j.contact.replace(/\D/g,'')}" onclick="event.stopPropagation()">Call</a>`:''}
       </div>
     </div>
@@ -798,6 +799,9 @@ function statusPill(status) {
 }
 
 // ══ UPDATE MODAL ═════════════════════════════════
+function openUpdateKey(key) { openUpdate(jobStore[key]); }
+function openNotifyKey(key) { openNotify(jobStore[key]); }
+
 function openUpdate(job) {
   currentJob=job;
   document.getElementById('modal-job-summary').innerHTML=
@@ -817,7 +821,7 @@ function openUpdate(job) {
 function closeModal(){document.getElementById('modal-update').classList.remove('open');currentJob=null;}
 
 function openNotifyFromUpdate() {
-  if(currentJob) { closeModal(); openNotify(currentJob); }
+  if(currentJob) { const j=currentJob; closeModal(); openNotify(j); }
 }
 
 async function saveUpdate() {
@@ -840,6 +844,14 @@ async function saveUpdate() {
 
 // ══ NOTIFY MODAL ═════════════════════════════════
 let notifyJob=null, notifyTab='email';
+
+// Job store — avoids JSON-in-onclick quote conflicts
+const jobStore = {};
+function storeJob(j) {
+  const key = 'j_'+(j.rowIndex||Math.random().toString(36).slice(2));
+  jobStore[key] = j;
+  return key;
+}
 
 function openNotify(job) {
   notifyJob=job;
