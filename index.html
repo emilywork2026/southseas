@@ -714,38 +714,32 @@ let carsData = [];
 
 async function loadCars() {
   document.getElementById('cc-grid').innerHTML='<div class="loading"><div class="spinner"></div>Loading…</div>';
-  const data = await api('getSchedule');
-  const jobs = data.jobs || [];
 
-  // Build map: plate -> job currently using it
+  // getDashboard returns ccInUse with active flag per plate
+  const dashData = await api('getDashboard');
+  const ccInUse = (dashData.counts||{}).ccInUse || {};
+
+  // active=true → car still with customer; active=false → job closed, car returned
   const inUseMap = {};
-  jobs.forEach(j => {
-    const s = (j.status||'').toLowerCase();
-    const isPU = s.includes('picked up');
-    if(j.cc && CC_PLATES.includes(j.cc) && !isPU) {
-      if(!inUseMap[j.cc] || !inUseMap[j.cc].inDate) {
-        inUseMap[j.cc] = j;
-      }
-    }
+  Object.entries(ccInUse).forEach(([plate, info]) => {
+    if(info.active) inUseMap[plate] = info;
   });
 
-  // Also check active WIP jobs needing CC
-  const waiting = jobs.filter(j => {
-    const s=(j.cc||'').toLowerCase();
-    const st=(j.status||'').toLowerCase();
-    return (s==='y'||s==='car rental request'||s==='car rental') 
-           && !CC_PLATES.includes(j.cc) && !st.includes('picked up');
+  // Jobs waiting for CC — needs one but doesn't have a plate assigned yet
+  const schedData = await api('getSchedule');
+  const waiting = (schedData.jobs||[]).filter(j => {
+    const cc=(j.cc||'').toLowerCase();
+    return (cc==='y'||cc==='car rental'||cc==='car rental request') && !CC_PLATES.includes(j.cc);
   });
 
-  const avail = CC_PLATES.filter(p=>!inUseMap[p]);
-  const inuse = CC_PLATES.filter(p=> inUseMap[p]);
+  const availCount = CC_PLATES.filter(p=>!inUseMap[p]).length;
+  const inuseCount = Object.keys(inUseMap).length;
 
-  document.getElementById('cc-avail').textContent = avail.length;
-  document.getElementById('cc-inuse').textContent  = inuse.length;
+  document.getElementById('cc-avail').textContent = availCount;
+  document.getElementById('cc-inuse').textContent  = inuseCount;
   document.getElementById('cc-total').textContent  = CC_PLATES.length;
   document.getElementById('cc-asof').textContent   = 'Last updated '+new Date().toLocaleTimeString();
 
-  // Render cards
   document.getElementById('cc-grid').innerHTML = CC_PLATES.map(plate => {
     const job = inUseMap[plate];
     if(job) {
@@ -754,19 +748,21 @@ async function loadCars() {
         <div class="cc-plate">${plate}</div>
         <div class="cc-status" style="color:var(--red)">IN USE</div>
         <div class="cc-customer">${esc(job.name)}</div>
-        <div class="cc-customer">${esc(job.vehicle)}</div>
+        <div class="cc-customer" style="font-size:10px;color:#666">${esc(job.vehicle)}</div>
         <div class="cc-since">IN: ${esc(job.inDate||'—')} · WO: ${esc(job.wo)}</div>
       </div>`;
     } else {
+      const last = ccInUse[plate];
+      const lastInfo = last ? `<div class="cc-since" style="color:#9CA3AF;font-size:10px">Last: ${esc(last.name||'—')}</div>` : '';
       return `<div class="cc-card available">
         <div class="cc-badge green"></div>
         <div class="cc-plate">${plate}</div>
         <div class="cc-status" style="color:var(--green)">AVAILABLE</div>
+        ${lastInfo}
       </div>`;
     }
   }).join('');
 
-  // Waiting list
   const waitEl = document.getElementById('cc-waiting');
   if(waiting.length) {
     waitEl.innerHTML = waiting.map(j=>`
