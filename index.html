@@ -890,7 +890,7 @@ function getEmailMessage(type) {
   if(!notifyJob) return '';
   const n=notifyJob.name, v=notifyJob.vehicle;
   const msgs={
-    pickup:`Hi ${n},\n\nGreat news! Your ${v} has been completed and is ready for pickup.\n\nPlease call us at 604-520-8222 to arrange a convenient pickup time.\n\nThank you for choosing South Seas Auto Body.\n\nBest regards,\nSouth Seas Auto Body Team`,
+    pickup:`Hi ${n},\n\nYour ${v} is ready for pickup today before 5pm. Please call us to confirm your pickup time.\n\nSouth Seas Auto Body\n604-520-8222`,
     parts:`Hi ${n},\n\nWe wanted to let you know that the parts for your ${v} have arrived.\n\nWe will be in touch shortly to schedule your appointment.\n\nThank you for your patience.\n\nSouth Seas Auto Body Team`,
     approved:`Hi ${n},\n\nYour estimate for the ${v} has been approved and we are now ordering the required parts.\n\nWe will contact you once the parts arrive to schedule your repair.\n\nSouth Seas Auto Body Team`,
     custom:''
@@ -902,7 +902,7 @@ function getSMSMessage(type) {
   if(!notifyJob) return '';
   const n=notifyJob.name.split(' ')[0], v=notifyJob.vehicle;
   const msgs={
-    pickup:`Hi ${n}, your ${v} is ready for pickup at South Seas Auto Body. Please call 604-520-8222. Thank you!`,
+    pickup:`Hi ${n}, your ${v} is ready for pickup today before 5pm. Please call us to confirm. South Seas Auto Body 604-520-8222`,
     parts:`Hi ${n}, parts have arrived for your ${v}. We'll contact you shortly to schedule. South Seas Auto Body`,
     approved:`Hi ${n}, your estimate for the ${v} has been approved. We're ordering parts now. South Seas Auto Body`,
     custom:''
