@@ -534,15 +534,14 @@ async function loadDashboard() {
        </div></div>`).join('');
   }
 
-  // CC summary on dashboard
-  if(schedData.ok) {
-    const jobs=schedData.jobs||[];
-    const inUse=new Set();
-    jobs.forEach(j=>{ if(j.cc&&CC_PLATES.includes(j.cc)) inUse.add(j.cc); });
-    const avail=CC_PLATES.filter(p=>!inUse.has(p));
+  // CC summary on dashboard — from getDashboard ccInUse
+  if(dashData.ok && dashData.counts) {
+    const ccInUse = dashData.counts.ccInUse || {};
+    const inUseCount = Object.keys(ccInUse).length;
+    const availCount = CC_PLATES.length - inUseCount;
     document.getElementById('dash-cc-summary').innerHTML=
-      `<div class="stat"><div class="stat-label">Available</div><div class="stat-val" style="color:var(--green)">${avail.length}</div></div>
-       <div class="stat"><div class="stat-label">In use</div><div class="stat-val" style="color:var(--red)">${inUse.size}</div></div>
+      `<div class="stat"><div class="stat-label">Available</div><div class="stat-val" style="color:var(--green)">${availCount}</div></div>
+       <div class="stat"><div class="stat-label">In use</div><div class="stat-val" style="color:var(--red)">${inUseCount}</div></div>
        <div class="stat"><div class="stat-label">Total</div><div class="stat-val">${CC_PLATES.length}</div></div>`;
   }
 
