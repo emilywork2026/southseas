@@ -248,7 +248,7 @@ textarea{resize:vertical;min-height:72px;}
   <!-- Weekly hours mini -->
   <div class="card" style="margin-bottom:14px">
     <div class="sec-hd" style="margin-bottom:10px">
-      <div class="sec-title" style="font-size:14px">This week's hours</div>
+      <div class="sec-title" style="font-size:14px">Tech hours (all time)</div>
       <button class="btn btn-sm" onclick="showPage('techs')">Full report</button>
     </div>
     <div id="dash-week-hours"></div>
@@ -356,7 +356,7 @@ textarea{resize:vertical;min-height:72px;}
     <div class="form-row">
       <div class="form-group"><label class="form-label">Plate #</label><input type="text" id="f-plate" placeholder="AB123C"></div>
       <div class="form-group"><label class="form-label">Courtesy car</label>
-        <select id="f-cc"><option value="">None</option><option>Y</option><option>N</option><option>LK853L</option><option>VJ785L</option><option>TX235X</option><option>NW391N</option><option>SB272H</option><option>LK854L</option><option>TN321R</option><option>VJ571K</option><option>SB252H</option><option>XP926R</option><option>TX225X</option><option>Car Rental</option></select>
+        <select id="f-cc"><option value="">None</option><option>Y</option><option>N</option><option>VJ785L</option><option>TX235X</option><option>NW391N</option><option>SB272H</option><option>LK854L</option><option>TN321R</option><option>VJ571K</option><option>SB252H</option><option>XP926R</option><option>TX225X</option><option>Car Rental</option></select>
       </div>
     </div>
     <div class="form-row">
@@ -468,14 +468,69 @@ textarea{resize:vertical;min-height:72px;}
   </div>
 </div>
 
+<!-- ═══ CONFIRM SCHEDULE MODAL ═══ -->
+<div class="modal-overlay" id="modal-schedule">
+  <div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title">📅 Confirm Schedule</div>
+      <button class="modal-close" onclick="closeScheduleModal()">&times;</button>
+    </div>
+    <div id="sched-job-summary" style="background:var(--bg);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:13px;"></div>
+    <div style="background:#CCFBF1;border:1px solid #0D9488;border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:12px;color:#0F766E;">
+      ⭐ Parts have arrived — confirm the repair date with the customer and assign technicians.
+    </div>
+    <div class="form-group">
+      <label class="form-label">Scheduled repair date <span style="color:var(--red)">*</span></label>
+      <input type="date" id="sched-date">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Body tech</label>
+        <select id="sched-body">
+          <option value="">—</option>
+          <option>Aashi</option><option>Nelson</option><option>RC</option>
+          <option>David</option><option>Johnny</option><option>John</option>
+          <option>Ammar Ali</option><option>Marco</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Paint tech</label>
+        <select id="sched-paint">
+          <option value="">—</option>
+          <option>Aashi</option><option>Nelson</option><option>RC</option>
+          <option>David</option><option>Johnny</option><option>John</option>
+          <option>Ammar Ali</option><option>Marco</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Note (optional)</label>
+      <input type="text" id="sched-note" placeholder="e.g. Confirmed with customer Apr 10 9am">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Notify customer?</label>
+      <select id="sched-notify">
+        <option value="no">No</option>
+        <option value="sms">Yes — send SMS</option>
+        <option value="email">Yes — send email</option>
+        <option value="both">Yes — send both</option>
+      </select>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-success" onclick="saveScheduleConfirm()" style="font-weight:600">✅ Confirm Schedule</button>
+      <button class="btn" onclick="closeScheduleModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz1fTacFgTlkt-lSz2yi9qhumUm7tpZR9xGyPZV2J1aKVhSQqCcYBJf_CwucC8An4_Vtg/exec';
 
 // ══ COURTESY CARS ════════════════════════════════
-const CC_PLATES = ['LK853L','VJ785L','TX235X','NW391N','SB272H','LK854L',
-                   'TN321R','VJ571K','SB252H','XP926R','TX225X','VN281J'];
+const CC_PLATES = ['VJ785L','TX235X','NW391N','SB272H','LK854L',
+                   'TN321R','VJ571K','SB252H','XP926R','TX225X','VN281J']; // LK853L sold
 
 // ══ NAVIGATION ═══════════════════════════════════
 function showPage(id) {
@@ -505,8 +560,8 @@ async function api(action, body={}) {
 // ══ DASHBOARD ════════════════════════════════════
 async function loadDashboard() {
   document.getElementById('dash-asof').textContent='Loading…';
-  const [dashData, techData, schedData] = await Promise.all([
-    api('getDashboard'), api('getTechHours'), api('getSchedule')
+  const [dashData, schedData] = await Promise.all([
+    api('getDashboard'), api('getSchedule')
   ]);
 
   if(dashData.ok||dashData.counts) {
@@ -518,14 +573,17 @@ async function loadDashboard() {
     document.getElementById('dash-asof').textContent='As of '+new Date(dashData.asOf).toLocaleTimeString();
 
     const stages=[
-      ['New intake',   c.newIntake,    'sp-blue'],
-      ['Estimate sent',c.estimateSent, 'sp-purple'],
-      ['Approved',     c.approved,     'sp-gold'],
-      ['Parts ordered',c.partsOrdered, 'sp-orange'],
-      ['Parts arrived',c.partsArrived, 'sp-teal'],
-      ['Scheduled',    c.scheduled,    'sp-blue'],
-      ['Total loss',   c.totalLoss,    'sp-red'],
-      ['Cancelled',    c.cancelled,    'sp-red'],
+      ['Towed IN / Estimate', c.newIntake,    'sp-purple'],
+      ['Estimate sent',       c.estimateSent, 'sp-purple'],
+      ['Approved',            c.approved,     'sp-gold'],
+      ['Parts ordered',       c.partsOrdered, 'sp-orange'],
+      ['Parts arrived',       c.partsArrived, 'sp-teal'],
+      ['Scheduled',           c.scheduled,    'sp-blue'],
+      ['WIP / In progress',   c.inProgress,   'sp-blue'],
+      ['Outstanding balance', c.outstanding,  'sp-red'],
+      ['No status (old jobs)',c.noStatus||0,  'sp-grey'],
+      ['Total loss',          c.totalLoss,    'sp-red'],
+      ['Cancelled',           c.cancelled,    'sp-red'],
     ];
     document.getElementById('dash-stages').innerHTML=stages.map(([l,v,cls])=>
       `<div class="stat"><div class="stat-label">${l}</div>
@@ -545,13 +603,25 @@ async function loadDashboard() {
        <div class="stat"><div class="stat-label">Total</div><div class="stat-val">${CC_PLATES.length}</div></div>`;
   }
 
-  // This week's hours on dashboard
-  if(techData.ok&&techData.techs) {
-    const techs=techData.techs;
-    const entries=Object.entries(techs).filter(([,t])=>(t.b+t.p)>0)
-      .sort((a,b)=>(b[1].b+b[1].p)-(a[1].b+a[1].p)).slice(0,4);
-    document.getElementById('dash-week-hours').innerHTML=entries.length?
-      entries.map(([name,t])=>`
+  // Tech hours on dashboard — use getDashboard techHours (includes all jobs)
+  if(dashData.ok && dashData.counts && dashData.counts.techHours) {
+    const techs = dashData.counts.techHours;
+    const entries = Object.entries(techs)
+      .filter(([name,t]) => name && name.length>1 && (t.b+t.p)>0)
+      .sort((a,b) => (b[1].b+b[1].p) - (a[1].b+a[1].p));
+
+    // Total hours across all jobs (including unassigned)
+    let totalB=0, totalP=0;
+    Object.values(techs).forEach(t => { totalB+=t.b; totalP+=t.p; });
+
+    let html = `<div style="display:flex;gap:16px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)">
+      <span style="font-size:12px;color:var(--muted)">Total B: <strong style="color:var(--blue)">${totalB.toFixed(1)}</strong></span>
+      <span style="font-size:12px;color:var(--muted)">Total P: <strong style="color:var(--purple)">${totalP.toFixed(1)}</strong></span>
+      <span style="font-size:12px;color:var(--muted)">Combined: <strong>${(totalB+totalP).toFixed(1)}</strong></span>
+    </div>`;
+
+    if(entries.length) {
+      html += entries.map(([name,t]) => `
         <div class="week-row">
           <span style="font-weight:500;font-size:13px">${esc(name)}</span>
           <div style="display:flex;gap:12px;align-items:center">
@@ -559,8 +629,14 @@ async function loadDashboard() {
             <span class="week-p">P: ${t.p.toFixed(1)}</span>
             <span class="week-hrs">${(t.b+t.p).toFixed(1)} hrs</span>
           </div>
-        </div>`).join('') :
-      '<div class="empty">No hours recorded yet</div>';
+        </div>`).join('');
+    } else {
+      html += '<div class="empty" style="padding:8px 0">No tech hours assigned yet — assign techs in Update Status</div>';
+    }
+    document.getElementById('dash-week-hours').innerHTML = html;
+  } else {
+    document.getElementById('dash-week-hours').innerHTML =
+      '<div class="empty">Loading tech hours…</div>';
   }
 }
 
@@ -700,6 +776,8 @@ function jobCard(j) {
       ${j.notes?`<div class="notes-box">${esc(j.notes)}</div>`:''}
       <div class="btn-row">
         <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();openUpdateKey('${key}')">Update status</button>
+        ${(j.status||'').toLowerCase().includes('parts arrived') || (j.status||'').toLowerCase().includes('arrived') ?
+          `<button class="btn btn-success btn-sm" onclick="event.stopPropagation();openScheduleKey('${key}')" style="font-weight:600">📅 Confirm Schedule</button>` : ''}
         <button class="btn btn-warn btn-sm" onclick="event.stopPropagation();openNotifyKey('${key}')">Notify</button>
         ${j.contact?`<a class="btn btn-sm" href="tel:${j.contact.replace(/\D/g,'')}" onclick="event.stopPropagation()">Call</a>`:''}
       </div>
@@ -816,6 +894,82 @@ function openUpdate(job) {
 }
 
 function closeModal(){document.getElementById('modal-update').classList.remove('open');currentJob=null;}
+
+// ══ CONFIRM SCHEDULE ══════════════════════════════════════
+let schedJob = null;
+
+function openScheduleKey(key) { openSchedule(jobStore[key]); }
+
+function openSchedule(job) {
+  schedJob = job;
+  document.getElementById('sched-job-summary').innerHTML =
+    `<strong>${esc(job.name)}</strong> · ${esc(job.vehicle)} · <b>${esc(job.plate||'')}</b><br>
+     <span style="font-size:12px;color:var(--muted)">WO: ${esc(job.wo)} · ${esc(job.claim)}</span><br>
+     <span style="font-size:12px;color:var(--muted)">Contact: ${esc(job.contact||'—')}</span>`;
+  // Pre-fill existing techs if set
+  document.getElementById('sched-body').value  = job.bodyTech  || '';
+  document.getElementById('sched-paint').value = job.paintTech || '';
+  document.getElementById('sched-date').value  = '';
+  document.getElementById('sched-note').value  = '';
+  document.getElementById('sched-notify').value= 'no';
+  document.getElementById('modal-schedule').classList.add('open');
+}
+
+function closeScheduleModal() {
+  document.getElementById('modal-schedule').classList.remove('open');
+  schedJob = null;
+}
+
+async function saveScheduleConfirm() {
+  if (!schedJob) return;
+  const date     = document.getElementById('sched-date').value;
+  const bodyTech = document.getElementById('sched-body').value;
+  const paintTech= document.getElementById('sched-paint').value;
+  const note     = document.getElementById('sched-note').value.trim();
+  const notify   = document.getElementById('sched-notify').value;
+
+  if (!date) { toast('Please select a scheduled date'); return; }
+
+  const btn = document.querySelector('#modal-schedule .btn-success');
+  btn.textContent = 'Saving…'; btn.disabled = true;
+
+  const payload = {
+    rowIndex:  schedJob.rowIndex,
+    source:    schedJob.source,
+    status:    'Schedule',
+    outDate:   date,
+    bodyTech:  bodyTech,
+    paintTech: paintTech,
+    notes:     note ? `Scheduled ${date}${note ? ' — '+note : ''}` : `Confirmed schedule: ${date}`,
+  };
+
+  const res = await api('updateStatus', payload);
+  btn.textContent = '✅ Confirm Schedule'; btn.disabled = false;
+
+  if (!res.ok) { toast('Error: '+(res.error||'Unknown')); return; }
+
+  toast(`✅ ${schedJob.name} scheduled for ${date}`);
+
+  // Notify customer if requested
+  if (notify === 'sms' || notify === 'both') {
+    const phone = (schedJob.contact||'').replace(/\D/g,'');
+    if (phone) {
+      const msg = `Hi ${schedJob.name.split(' ')[0]}, your ${schedJob.vehicle} is scheduled for repair on ${date}. Please call us if you have any questions. South Seas Auto Body 604-278-5121`;
+      window.open(`sms:+1${phone}?body=${encodeURIComponent(msg)}`, '_blank');
+    }
+  }
+  if (notify === 'email' || notify === 'both') {
+    if (schedJob.email) {
+      const msg = `Hi ${schedJob.name},\n\nYour ${schedJob.vehicle} is scheduled for repair on ${date}.\n\nPlease call us at 604-278-5121 if you have any questions.\n\nSouth Seas Auto Body\n604-278-5121`;
+      await api('notifyCustomer', { email: schedJob.email, name: schedJob.name, vehicle: schedJob.vehicle, message: msg });
+    } else {
+      toast('No email on file — SMS only');
+    }
+  }
+
+  closeScheduleModal();
+  doSearch();
+}
 
 function openNotifyFromUpdate() {
   if(currentJob) { const j=currentJob; closeModal(); openNotify(j); }
