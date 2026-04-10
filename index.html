@@ -5,7 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>South Seas Auto Body</title>
+<title>South Seas Auto Body · Jobs 2026</title>
+<!-- © 2026 South Seas Auto Body. All Rights Reserved. Proprietary & Confidential. -->
+<meta name="robots" content="noindex, nofollow">
+<meta name="copyright" content="© 2026 South Seas Auto Body. All Rights Reserved.">
 <style>
 :root {
   --navy:#1F3864; --gold:#C9A84C; --white:#ffffff; --bg:#F4F5F7; --bg2:#ffffff;
@@ -321,10 +324,11 @@ textarea{resize:vertical;min-height:72px;}
 <div class="page" id="page-schedule">
   <div class="sec-hd">
     <div class="sec-title">Schedule</div>
-    <div style="display:flex;gap:8px">
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
       <button class="btn btn-sm" onclick="calPrev()">&#8249;</button>
       <span id="cal-month" style="font-size:13px;font-weight:600;min-width:100px;text-align:center;line-height:2"></span>
       <button class="btn btn-sm" onclick="calNext()">&#8250;</button>
+      <button class="btn btn-sm btn-primary" onclick="loadSchedule();toast('Schedule re-sorted by date')">↻ Re-sort</button>
     </div>
   </div>
   <div class="cal-grid" id="cal-header"></div>
@@ -356,7 +360,8 @@ textarea{resize:vertical;min-height:72px;}
     <div class="form-row">
       <div class="form-group"><label class="form-label">Plate #</label><input type="text" id="f-plate" placeholder="AB123C"></div>
       <div class="form-group"><label class="form-label">Courtesy car</label>
-        <select id="f-cc"><option value="">None</option><option>Y</option><option>N</option><option>VJ785L</option><option>TX235X</option><option>NW391N</option><option>SB272H</option><option>LK854L</option><option>TN321R</option><option>VJ571K</option><option>SB252H</option><option>XP926R</option><option>TX225X</option><option>Car Rental</option></select>
+        <select id="f-cc"><option value="">None</option><option>Y</option><option>N</option><option>VJ785L</option><option>TX235X</option><option>NW391N</option><option>SB272H</option><option>LK853L</option><option>TN321R</option><option>VJ571K</option><option>SB252H</option><option>XP926R</option><option>TX225X</option><option>VN281J</option><option>Car Rental</option></select>
+        <div style="font-size:10px;color:#92400E;margin-top:3px;">⚠️ LK854L sold — use LK853L</div>
       </div>
     </div>
     <div class="form-row">
@@ -397,7 +402,7 @@ textarea{resize:vertical;min-height:72px;}
     <div class="modal-hd"><div class="modal-title">Update job</div><button class="modal-close" onclick="closeModal()">&times;</button></div>
     <div id="modal-job-summary" style="background:var(--bg);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:13px;"></div>
     <div class="form-group"><label class="form-label">Status</label>
-      <select id="m-status"><option>Estimate/Photo</option><option>Estimate Pending Review</option><option>Estimate Approved</option><option>Order Parts</option><option>Ordered Parts</option><option>Parts arrived</option><option>Schedule</option><option>In Progress</option><option>Picked up</option><option>Outstanding Balance</option><option>No Show</option><option>Cancelled</option><option>Total Loss</option><option>Shop Change Request</option></select>
+      <select id="m-status"><option>Estimate/Photo</option><option>Towed IN</option><option>Estimate Pending Review</option><option>Estimate Approved</option><option>Order Parts</option><option>Ordered Parts</option><option>Parts arrived</option><option>Schedule</option><option>WIP</option><option>In Progress</option><option>Refix</option><option>On Hold</option><option>Picked up</option><option>Outstanding Balance</option><option>No Show</option><option>Cancelled</option><option>Total Loss</option><option>Shop Change Request</option><option>No Respond</option></select>
     </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">OUT Date</label><input type="date" id="m-out"></div>
@@ -439,6 +444,7 @@ textarea{resize:vertical;min-height:72px;}
       <div class="form-group"><label class="form-label">Customer email</label><input type="email" id="n-email" placeholder="customer@email.com"></div>
       <div class="form-group"><label class="form-label">Message type</label>
         <select id="n-email-type" onchange="updateEmailPreview()">
+          <option value="schedconf">Schedule confirmation</option>
           <option value="pickup">Vehicle ready for pickup</option>
           <option value="parts">Parts arrived — scheduling soon</option>
           <option value="approved">Estimate approved — ordering parts</option>
@@ -453,6 +459,7 @@ textarea{resize:vertical;min-height:72px;}
       <div class="form-group"><label class="form-label">Customer phone</label><input type="tel" id="n-phone" placeholder="604-xxx-xxxx"></div>
       <div class="form-group"><label class="form-label">SMS message</label>
         <select id="n-sms-type" onchange="updateSMSPreview()">
+          <option value="schedconf">Schedule confirmation</option>
           <option value="pickup">Vehicle ready for pickup</option>
           <option value="parts">Parts arrived — scheduling soon</option>
           <option value="approved">Estimate approved</option>
@@ -508,13 +515,14 @@ textarea{resize:vertical;min-height:72px;}
       <input type="text" id="sched-note" placeholder="e.g. Confirmed with customer Apr 10 9am">
     </div>
     <div class="form-group">
-      <label class="form-label">Notify customer?</label>
+      <label class="form-label">Send schedule confirmation to customer?</label>
       <select id="sched-notify">
-        <option value="no">No</option>
-        <option value="sms">Yes — send SMS</option>
-        <option value="email">Yes — send email</option>
-        <option value="both">Yes — send both</option>
+        <option value="no">No — skip notification</option>
+        <option value="sms">Yes — SMS text confirmation</option>
+        <option value="email">Yes — email confirmation</option>
+        <option value="both">Yes — email + SMS confirmation</option>
       </select>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px;">Auto-fills confirmation message with the scheduled date</div>
     </div>
     <div class="btn-row">
       <button class="btn btn-success" onclick="saveScheduleConfirm()" style="font-weight:600">✅ Confirm Schedule</button>
@@ -524,13 +532,17 @@ textarea{resize:vertical;min-height:72px;}
 </div>
 
 <div class="toast" id="toast"></div>
+<div style="text-align:center;padding:16px 12px 8px;font-size:10px;color:var(--muted);border-top:1px solid var(--border);margin-top:24px;">
+  © 2026 South Seas Auto Body · All Rights Reserved · Proprietary &amp; Confidential<br>
+  Unauthorized access, copying or distribution is prohibited.
+</div>
 
 <script>
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz1fTacFgTlkt-lSz2yi9qhumUm7tpZR9xGyPZV2J1aKVhSQqCcYBJf_CwucC8An4_Vtg/exec';
 
 // ══ COURTESY CARS ════════════════════════════════
-const CC_PLATES = ['VJ785L','TX235X','NW391N','SB272H','LK854L',
-                   'TN321R','VJ571K','SB252H','XP926R','TX225X','VN281J']; // LK853L sold
+const CC_PLATES = ['VJ785L','TX235X','NW391N','SB272H','LK853L',
+                   'TN321R','VJ571K','SB252H','XP926R','TX225X','VN281J']; // LK854L SOLD Apr 2026
 
 // ══ NAVIGATION ═══════════════════════════════════
 function showPage(id) {
@@ -600,7 +612,8 @@ async function loadDashboard() {
     document.getElementById('dash-cc-summary').innerHTML=
       `<div class="stat"><div class="stat-label">Available</div><div class="stat-val" style="color:var(--green)">${availCount}</div></div>
        <div class="stat"><div class="stat-label">In use</div><div class="stat-val" style="color:var(--red)">${inUseCount}</div></div>
-       <div class="stat"><div class="stat-label">Total</div><div class="stat-val">${CC_PLATES.length}</div></div>`;
+       <div class="stat"><div class="stat-label">Total fleet</div><div class="stat-val">${CC_PLATES.length}</div></div>
+       <div class="stat"><div class="stat-label" style="color:#92400E">⚠️ Sold</div><div class="stat-val" style="font-size:14px;color:#92400E">LK854L</div></div>`;
   }
 
   // Tech hours on dashboard — use getDashboard techHours (includes all jobs)
@@ -776,7 +789,7 @@ function jobCard(j) {
       ${j.notes?`<div class="notes-box">${esc(j.notes)}</div>`:''}
       <div class="btn-row">
         <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();openUpdateKey('${key}')">Update status</button>
-        ${(j.status||'').toLowerCase().includes('parts arrived') || (j.status||'').toLowerCase().includes('arrived') ?
+        ${(j.status||'').toLowerCase().includes('parts arrived') || (j.status||'').toLowerCase().includes('arrived') || (j.status||'').toLowerCase().includes('approved') ?
           `<button class="btn btn-success btn-sm" onclick="event.stopPropagation();openScheduleKey('${key}')" style="font-weight:600">📅 Confirm Schedule</button>` : ''}
         <button class="btn btn-warn btn-sm" onclick="event.stopPropagation();openNotifyKey('${key}')">Notify</button>
         ${j.contact?`<a class="btn btn-sm" href="tel:${j.contact.replace(/\D/g,'')}" onclick="event.stopPropagation()">Call</a>`:''}
@@ -860,8 +873,13 @@ async function loadCars() {
 function statusPill(status) {
   const s=(status||'').toLowerCase();
   if(s.includes('picked up'))  return{cls:'sp-green',label:'Picked up'};
-  if(s.includes('cancel')||s.includes('no show')) return{cls:'sp-red',label:status};
+  if(s.includes('no show'))    return{cls:'sp-red',label:'No Show'};
+  if(s.includes('cancel'))     return{cls:'sp-red',label:status};
   if(s.includes('total loss')) return{cls:'sp-red',label:'Total loss'};
+  if(s.includes('on hold'))    return{cls:'sp-gold',label:'On Hold'};
+  if(s.includes('no respond')) return{cls:'sp-grey',label:'No Response'};
+  if(s.includes('wip')||s.includes('in progress')) return{cls:'sp-gold',label:status};
+  if(s.includes('refix'))      return{cls:'sp-teal',label:'Refix'};
   if(s.includes('schedule'))   return{cls:'sp-blue',label:'Scheduled'};
   if(s.includes('parts arrived')||s.includes('arrived')) return{cls:'sp-teal',label:'Parts arrived'};
   if(s.includes('ordered')||s.includes('order par')) return{cls:'sp-orange',label:'Parts ordered'};
@@ -954,16 +972,21 @@ async function saveScheduleConfirm() {
   if (notify === 'sms' || notify === 'both') {
     const phone = (schedJob.contact||'').replace(/\D/g,'');
     if (phone) {
-      const msg = `Hi ${schedJob.name.split(' ')[0]}, your ${schedJob.vehicle} is scheduled for repair on ${date}. Please call us if you have any questions. South Seas Auto Body 604-278-5121`;
+      const firstName = schedJob.name.split(' ')[0];
+      const msg = `Hi ${firstName}, your ${schedJob.vehicle} repair is confirmed for ${date}. Call 604-278-5121 to reschedule if needed. South Seas Auto Body`;
       window.open(`sms:+1${phone}?body=${encodeURIComponent(msg)}`, '_blank');
+      toast('SMS app opened — tap Send to confirm');
+    } else {
+      toast('No phone number on file for SMS');
     }
   }
   if (notify === 'email' || notify === 'both') {
     if (schedJob.email) {
-      const msg = `Hi ${schedJob.name},\n\nYour ${schedJob.vehicle} is scheduled for repair on ${date}.\n\nPlease call us at 604-278-5121 if you have any questions.\n\nSouth Seas Auto Body\n604-278-5121`;
+      const msg = `Hi ${schedJob.name},\n\nThis is a confirmation that your ${schedJob.vehicle} repair has been scheduled.\n\n📅 Scheduled Date: ${date}\n\nPlease arrive on time. If you need to reschedule, please call us at 604-278-5121.\n\nThank you for choosing South Seas Auto Body!\n\nSouth Seas Auto Body Team\n604-278-5121`;
       await api('notifyCustomer', { email: schedJob.email, name: schedJob.name, vehicle: schedJob.vehicle, message: msg });
+      toast('Confirmation email sent to ' + schedJob.email);
     } else {
-      toast('No email on file — SMS only');
+      toast('No email on file — save email in Update Status first');
     }
   }
 
@@ -1038,7 +1061,9 @@ function switchNotifyTab(tab) {
 function getEmailMessage(type) {
   if(!notifyJob) return '';
   const n=notifyJob.name, v=notifyJob.vehicle;
+  const date=notifyJob.schedDate||notifyJob.outDate||'[DATE]';
   const msgs={
+    schedconf:`Hi ${n},\n\nThis is a confirmation that your ${v} repair has been scheduled.\n\n📅 Scheduled Date: ${date}\n\nPlease arrive on time. If you need to reschedule, call us at 604-278-5121.\n\nThank you for choosing South Seas Auto Body!\n\nSouth Seas Auto Body Team\n604-278-5121`,
     pickup:`Hi ${n},\n\nYour ${v} is ready for pickup today before 5pm. Please call us to confirm your pickup time.\n\nSouth Seas Auto Body\n604-278-5121`,
     parts:`Hi ${n},\n\nWe wanted to let you know that the parts for your ${v} have arrived.\n\nWe will be in touch shortly to schedule your appointment.\n\nThank you for your patience.\n\nSouth Seas Auto Body Team`,
     approved:`Hi ${n},\n\nYour estimate for the ${v} has been approved and we are now ordering the required parts.\n\nWe will contact you once the parts arrive to schedule your repair.\n\nSouth Seas Auto Body Team`,
@@ -1050,7 +1075,9 @@ function getEmailMessage(type) {
 function getSMSMessage(type) {
   if(!notifyJob) return '';
   const n=notifyJob.name.split(' ')[0], v=notifyJob.vehicle;
+  const date=notifyJob.schedDate||notifyJob.outDate||'[DATE]';
   const msgs={
+    schedconf:`Hi ${n}, your ${v} repair is confirmed for ${date}. Call 604-278-5121 to reschedule if needed. South Seas Auto Body`,
     pickup:`Hi ${n}, your ${v} is ready for pickup today before 5pm. Please call us to confirm. South Seas Auto Body 604-278-5121`,
     parts:`Hi ${n}, parts have arrived for your ${v}. We'll contact you shortly to schedule. South Seas Auto Body`,
     approved:`Hi ${n}, your estimate for the ${v} has been approved. We're ordering parts now. South Seas Auto Body`,
