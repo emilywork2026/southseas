@@ -6,9 +6,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>South Seas Auto Body · Jobs 2026</title>
-<!-- © 2026 South Seas Auto Body. All Rights Reserved. Proprietary & Confidential. -->
-<meta name="robots" content="noindex, nofollow">
-<meta name="copyright" content="© 2026 South Seas Auto Body. All Rights Reserved.">
+<!-- © 2026 Emily (emilywork) — Owner & Developer. All Rights Reserved. -->
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta name="copyright" content="© 2026 Emily (emilywork). All Rights Reserved.">
 <style>
 :root {
   --navy:#1F3864; --gold:#C9A84C; --white:#ffffff; --bg:#F4F5F7; --bg2:#ffffff;
@@ -193,7 +193,36 @@ textarea{resize:vertical;min-height:72px;}
 </head>
 <body>
 
-<nav class="nav">
+<!-- ═══ LOGIN PAGE ═══ -->
+<div id="login-page" style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#1F3864 0%,#0891B2 100%);padding:16px;">
+  <div style="background:#fff;border-radius:16px;padding:36px 32px;width:100%;max-width:360px;box-shadow:0 8px 32px rgba(0,0,0,0.25);">
+    <div style="text-align:center;margin-bottom:24px;">
+      <div style="font-size:20px;font-weight:700;color:#1F3864;">South Seas Auto Body</div>
+      <div style="font-size:12px;color:#6B7280;margin-top:2px;">Jobs Management · 2026</div>
+    </div>
+    <div style="margin-bottom:12px;">
+      <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:4px;">Username</label>
+      <input type="text" id="li-user" placeholder="Enter username" autocomplete="username"
+        style="width:100%;padding:10px 12px;border:1.5px solid #D1D5DB;border-radius:8px;font-size:14px;outline:none;"
+        onfocus="this.style.borderColor='#1F3864'" onblur="this.style.borderColor='#D1D5DB'"
+        onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <div style="margin-bottom:16px;">
+      <label style="font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:4px;">Password</label>
+      <input type="password" id="li-pass" placeholder="Enter password" autocomplete="current-password"
+        style="width:100%;padding:10px 12px;border:1.5px solid #D1D5DB;border-radius:8px;font-size:14px;outline:none;"
+        onfocus="this.style.borderColor='#1F3864'" onblur="this.style.borderColor='#D1D5DB'"
+        onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <div id="li-err" style="color:#DC2626;font-size:12px;margin-bottom:10px;display:none;">Incorrect username or password.</div>
+    <button onclick="doLogin()" style="width:100%;padding:11px;background:#1F3864;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;">Sign In</button>
+    <div style="text-align:center;margin-top:20px;font-size:10px;color:#9CA3AF;">
+      © 2026 Emily (emilywork) · All Rights Reserved<br>Authorized users only
+    </div>
+  </div>
+</div>
+
+<nav class="nav" id="main-nav" style="display:none;">
   <div class="nav-logo">South Seas<span>Auto Body</span></div>
   <button class="nav-btn active" onclick="showPage('dashboard')" id="nb-dashboard">
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
@@ -219,7 +248,13 @@ textarea{resize:vertical;min-height:72px;}
     <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke-linecap="round"/></svg>
     Techs
   </button>
+  <div style="margin-left:auto;display:flex;align-items:center;gap:8px;padding-right:4px;">
+    <span id="nav-user" style="font-size:11px;color:rgba(255,255,255,0.7);"></span>
+    <button onclick="doLogout()" style="background:rgba(255,255,255,0.12);border:none;color:#fff;padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer;">Sign out</button>
+  </div>
 </nav>
+
+<div id="main-content" style="display:none;">
 
 <!-- ═══ DASHBOARD ═══ -->
 <div class="page active" id="page-dashboard">
@@ -324,11 +359,10 @@ textarea{resize:vertical;min-height:72px;}
 <div class="page" id="page-schedule">
   <div class="sec-hd">
     <div class="sec-title">Schedule</div>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <div style="display:flex;gap:8px">
       <button class="btn btn-sm" onclick="calPrev()">&#8249;</button>
       <span id="cal-month" style="font-size:13px;font-weight:600;min-width:100px;text-align:center;line-height:2"></span>
       <button class="btn btn-sm" onclick="calNext()">&#8250;</button>
-      <button class="btn btn-sm btn-primary" onclick="loadSchedule();toast('Schedule re-sorted by date')">↻ Re-sort</button>
     </div>
   </div>
   <div class="cal-grid" id="cal-header"></div>
@@ -361,7 +395,7 @@ textarea{resize:vertical;min-height:72px;}
       <div class="form-group"><label class="form-label">Plate #</label><input type="text" id="f-plate" placeholder="AB123C"></div>
       <div class="form-group"><label class="form-label">Courtesy car</label>
         <select id="f-cc"><option value="">None</option><option>Y</option><option>N</option><option>VJ785L</option><option>TX235X</option><option>NW391N</option><option>SB272H</option><option>LK853L</option><option>TN321R</option><option>VJ571K</option><option>SB252H</option><option>XP926R</option><option>TX225X</option><option>VN281J</option><option>Car Rental</option></select>
-        <div style="font-size:10px;color:#92400E;margin-top:3px;">⚠️ LK854L sold — use LK853L</div>
+        <small style="color:#92400E;font-size:10px;">⚠️ LK854L was sold — use LK853L</small>
       </div>
     </div>
     <div class="form-row">
@@ -402,7 +436,33 @@ textarea{resize:vertical;min-height:72px;}
     <div class="modal-hd"><div class="modal-title">Update job</div><button class="modal-close" onclick="closeModal()">&times;</button></div>
     <div id="modal-job-summary" style="background:var(--bg);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:13px;"></div>
     <div class="form-group"><label class="form-label">Status</label>
-      <select id="m-status"><option>Estimate/Photo</option><option>Towed IN</option><option>Estimate Pending Review</option><option>Estimate Approved</option><option>Order Parts</option><option>Ordered Parts</option><option>Parts arrived</option><option>Schedule</option><option>WIP</option><option>In Progress</option><option>Refix</option><option>On Hold</option><option>Picked up</option><option>Outstanding Balance</option><option>No Show</option><option>Cancelled</option><option>Total Loss</option><option>Shop Change Request</option><option>No Respond</option></select>
+      <select id="m-status">
+        <optgroup label="── Active ──">
+          <option>Towed IN</option>
+          <option>Estimate/Photo</option>
+          <option>Estimate Pending Review</option>
+          <option>Estimate Approved</option>
+          <option>Order Parts</option>
+          <option>Ordered Parts</option>
+          <option>Parts arrived</option>
+          <option>Schedule</option>
+          <option>WIP</option>
+          <option>In Progress</option>
+          <option>Refix</option>
+        </optgroup>
+        <optgroup label="── Hold / Issues ──">
+          <option>On Hold</option>
+          <option>No Show</option>
+          <option>Outstanding Balance</option>
+          <option>No Respond</option>
+        </optgroup>
+        <optgroup label="── Closed ──">
+          <option>Picked up</option>
+          <option>Cancelled</option>
+          <option>Total Loss</option>
+          <option>Shop Change Request</option>
+        </optgroup>
+      </select>
     </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">OUT Date</label><input type="date" id="m-out"></div>
@@ -444,7 +504,7 @@ textarea{resize:vertical;min-height:72px;}
       <div class="form-group"><label class="form-label">Customer email</label><input type="email" id="n-email" placeholder="customer@email.com"></div>
       <div class="form-group"><label class="form-label">Message type</label>
         <select id="n-email-type" onchange="updateEmailPreview()">
-          <option value="schedconf">Schedule confirmation</option>
+          <option value="schedconf">📅 Schedule confirmation</option>
           <option value="pickup">Vehicle ready for pickup</option>
           <option value="parts">Parts arrived — scheduling soon</option>
           <option value="approved">Estimate approved — ordering parts</option>
@@ -459,7 +519,7 @@ textarea{resize:vertical;min-height:72px;}
       <div class="form-group"><label class="form-label">Customer phone</label><input type="tel" id="n-phone" placeholder="604-xxx-xxxx"></div>
       <div class="form-group"><label class="form-label">SMS message</label>
         <select id="n-sms-type" onchange="updateSMSPreview()">
-          <option value="schedconf">Schedule confirmation</option>
+          <option value="schedconf">📅 Schedule confirmation</option>
           <option value="pickup">Vehicle ready for pickup</option>
           <option value="parts">Parts arrived — scheduling soon</option>
           <option value="approved">Estimate approved</option>
@@ -515,30 +575,103 @@ textarea{resize:vertical;min-height:72px;}
       <input type="text" id="sched-note" placeholder="e.g. Confirmed with customer Apr 10 9am">
     </div>
     <div class="form-group">
-      <label class="form-label">Send schedule confirmation to customer?</label>
-      <select id="sched-notify">
-        <option value="no">No — skip notification</option>
-        <option value="sms">Yes — SMS text confirmation</option>
-        <option value="email">Yes — email confirmation</option>
-        <option value="both">Yes — email + SMS confirmation</option>
-      </select>
-      <div style="font-size:11px;color:var(--muted);margin-top:4px;">Auto-fills confirmation message with the scheduled date</div>
+      <label class="form-label">Send confirmation to customer</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;">
+        <button class="btn btn-sm" id="sched-sms-btn" onclick="schedSendSMS()" style="background:#0891B2;color:#fff;border-color:#0891B2;">💬 SMS</button>
+        <button class="btn btn-sm" id="sched-email-btn" onclick="schedSendEmail()" style="background:#7C3AED;color:#fff;border-color:#7C3AED;">📧 Email</button>
+        <button class="btn btn-sm" id="sched-both-btn" onclick="schedSendBoth()" style="background:#1F3864;color:#fff;border-color:#1F3864;">📧+💬 Both</button>
+        <span style="font-size:11px;color:var(--muted);align-self:center;">or skip →</span>
+      </div>
+      <div id="sched-sent-status" style="font-size:11px;color:var(--green);margin-top:6px;min-height:16px;"></div>
+      <input type="hidden" id="sched-notify" value="no">
     </div>
     <div class="btn-row">
-      <button class="btn btn-success" onclick="saveScheduleConfirm()" style="font-weight:600">✅ Confirm Schedule</button>
+      <button class="btn btn-success" onclick="saveScheduleConfirm()" style="font-weight:600">✅ Confirm &amp; Save</button>
       <button class="btn" onclick="closeScheduleModal()">Cancel</button>
     </div>
   </div>
 </div>
 
 <div class="toast" id="toast"></div>
-<div style="text-align:center;padding:16px 12px 8px;font-size:10px;color:var(--muted);border-top:1px solid var(--border);margin-top:24px;">
-  © 2026 South Seas Auto Body · All Rights Reserved · Proprietary &amp; Confidential<br>
-  Unauthorized access, copying or distribution is prohibited.
+
+<!-- Copyright footer -->
+<div style="text-align:center;padding:20px 12px 10px;font-size:10px;color:var(--muted);border-top:1px solid var(--border);margin-top:24px;" id="copyright-footer">
+  © 2026 Emily (emilywork) · All Rights Reserved<br>
+  This web app, code and scripts are owned by Emily. Unauthorized access, copying or distribution is strictly prohibited.
 </div>
 
 <script>
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz1fTacFgTlkt-lSz2yi9qhumUm7tpZR9xGyPZV2J1aKVhSQqCcYBJf_CwucC8An4_Vtg/exec';
+
+// ══ ACCESS CONTROL ════════════════════════════════
+// Users: { username: { pass, role, display } }
+// Roles: owner = full; manager = full; staff = view+update; readonly = view only
+const USERS = {
+  'owner':   { pass: 'ssab2026!',  role: 'owner',    display: 'Owner' },
+  'john':    { pass: 'john2026',   role: 'manager',  display: 'John' },
+  'manager': { pass: 'mgr2026',    role: 'manager',  display: 'Manager' },
+  'aashi':   { pass: 'aashi2026',  role: 'staff',    display: 'Aashi' },
+  'nelson':  { pass: 'nelson2026', role: 'staff',    display: 'Nelson' },
+  'david':   { pass: 'david2026',  role: 'staff',    display: 'David' },
+  'rc':      { pass: 'rc2026',     role: 'staff',    display: 'RC' },
+  'johnny':  { pass: 'johnny2026', role: 'staff',    display: 'Johnny' },
+  'view':    { pass: 'view2026',   role: 'readonly', display: 'View Only' },
+};
+// ⚠️  Change these passwords — do not share this file publicly
+// To add a user: add a line above. To remove access: delete the line.
+
+let currentUser = null;
+let currentRole = null;
+
+function doLogin() {
+  const u = (document.getElementById('li-user').value||'').trim().toLowerCase();
+  const p = document.getElementById('li-pass').value;
+  const match = USERS[u];
+  if (match && match.pass === p) {
+    currentUser = match.display;
+    currentRole = match.role;
+    document.getElementById('li-err').style.display = 'none';
+    document.getElementById('login-page').style.display = 'none';
+    document.getElementById('main-nav').style.display = 'flex';
+    document.getElementById('main-content').style.display = 'block';
+    document.getElementById('copyright-footer').style.display = 'block';
+    document.getElementById('nav-user').textContent = match.display;
+    applyRolePermissions();
+    loadDashboard();
+  } else {
+    document.getElementById('li-err').style.display = 'block';
+    document.getElementById('li-pass').value = '';
+    document.getElementById('li-pass').focus();
+  }
+}
+
+function doLogout() {
+  currentUser = null; currentRole = null;
+  document.getElementById('login-page').style.display = 'flex';
+  document.getElementById('main-nav').style.display = 'none';
+  document.getElementById('main-content').style.display = 'none';
+  document.getElementById('copyright-footer').style.display = 'none';
+  document.getElementById('li-user').value = '';
+  document.getElementById('li-pass').value = '';
+}
+
+function applyRolePermissions() {
+  // readonly role — hide all write buttons
+  const isReadOnly = (currentRole === 'readonly');
+  document.querySelectorAll('.btn-primary, .btn-success, .btn-warn, .btn-danger').forEach(btn => {
+    if (isReadOnly && !btn.classList.contains('btn-sm-nav')) {
+      btn.style.display = 'none';
+    }
+  });
+  // staff can update status but not delete
+  if (currentRole === 'staff' || currentRole === 'readonly') {
+    // hide intake nav button for readonly
+    if (isReadOnly) {
+      const nb = document.getElementById('nb-intake');
+      if (nb) nb.style.display = 'none';
+    }
+  }
+}
 
 // ══ COURTESY CARS ════════════════════════════════
 const CC_PLATES = ['VJ785L','TX235X','NW391N','SB272H','LK853L',
@@ -546,6 +679,9 @@ const CC_PLATES = ['VJ785L','TX235X','NW391N','SB272H','LK853L',
 
 // ══ NAVIGATION ═══════════════════════════════════
 function showPage(id) {
+  if (!currentUser) return; // block if not logged in
+  // readonly can't access intake
+  if (id==='intake' && currentRole==='readonly') { toast('Read-only access — cannot add jobs'); return; }
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('page-'+id).classList.add('active');
@@ -612,8 +748,8 @@ async function loadDashboard() {
     document.getElementById('dash-cc-summary').innerHTML=
       `<div class="stat"><div class="stat-label">Available</div><div class="stat-val" style="color:var(--green)">${availCount}</div></div>
        <div class="stat"><div class="stat-label">In use</div><div class="stat-val" style="color:var(--red)">${inUseCount}</div></div>
-       <div class="stat"><div class="stat-label">Total fleet</div><div class="stat-val">${CC_PLATES.length}</div></div>
-       <div class="stat"><div class="stat-label" style="color:#92400E">⚠️ Sold</div><div class="stat-val" style="font-size:14px;color:#92400E">LK854L</div></div>`;
+       <div class="stat"><div class="stat-label">Fleet total</div><div class="stat-val">${CC_PLATES.length}</div></div>
+       <div class="stat"><div class="stat-label" style="color:#92400E">⚠️ Sold</div><div class="stat-val" style="font-size:13px;color:#92400E">LK854L</div></div>`;
   }
 
   // Tech hours on dashboard — use getDashboard techHours (includes all jobs)
@@ -789,7 +925,7 @@ function jobCard(j) {
       ${j.notes?`<div class="notes-box">${esc(j.notes)}</div>`:''}
       <div class="btn-row">
         <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();openUpdateKey('${key}')">Update status</button>
-        ${(j.status||'').toLowerCase().includes('parts arrived') || (j.status||'').toLowerCase().includes('arrived') || (j.status||'').toLowerCase().includes('approved') ?
+        ${(()=>{const s=(j.status||'').toLowerCase();return s.includes('parts arrived')||s.includes('arrived')||s.includes('approved')||s==='schedule';})() ?
           `<button class="btn btn-success btn-sm" onclick="event.stopPropagation();openScheduleKey('${key}')" style="font-weight:600">📅 Confirm Schedule</button>` : ''}
         <button class="btn btn-warn btn-sm" onclick="event.stopPropagation();openNotifyKey('${key}')">Notify</button>
         ${j.contact?`<a class="btn btn-sm" href="tel:${j.contact.replace(/\D/g,'')}" onclick="event.stopPropagation()">Call</a>`:''}
@@ -872,21 +1008,21 @@ async function loadCars() {
 // ══ STATUS HELPER ════════════════════════════════
 function statusPill(status) {
   const s=(status||'').toLowerCase();
-  if(s.includes('picked up'))  return{cls:'sp-green',label:'Picked up'};
-  if(s.includes('no show'))    return{cls:'sp-red',label:'No Show'};
-  if(s.includes('cancel'))     return{cls:'sp-red',label:status};
-  if(s.includes('total loss')) return{cls:'sp-red',label:'Total loss'};
-  if(s.includes('on hold'))    return{cls:'sp-gold',label:'On Hold'};
-  if(s.includes('no respond')) return{cls:'sp-grey',label:'No Response'};
-  if(s.includes('wip')||s.includes('in progress')) return{cls:'sp-gold',label:status};
-  if(s.includes('refix'))      return{cls:'sp-teal',label:'Refix'};
-  if(s.includes('schedule'))   return{cls:'sp-blue',label:'Scheduled'};
+  if(s.includes('picked up'))   return{cls:'sp-green',label:'Picked up'};
+  if(s.includes('no show'))     return{cls:'sp-red',label:'No Show'};
+  if(s.includes('cancel'))      return{cls:'sp-red',label:'Cancelled'};
+  if(s.includes('total loss'))  return{cls:'sp-red',label:'Total Loss'};
+  if(s.includes('on hold'))     return{cls:'sp-gold',label:'On Hold'};
+  if(s.includes('no respond'))  return{cls:'sp-grey',label:'No Response'};
+  if(s==='wip'||s.includes('in progress')) return{cls:'sp-gold',label:status};
+  if(s.includes('refix'))       return{cls:'sp-teal',label:'Refix'};
+  if(s.includes('schedule'))    return{cls:'sp-blue',label:'Scheduled'};
   if(s.includes('parts arrived')||s.includes('arrived')) return{cls:'sp-teal',label:'Parts arrived'};
   if(s.includes('ordered')||s.includes('order par')) return{cls:'sp-orange',label:'Parts ordered'};
-  if(s.includes('approved'))   return{cls:'sp-green',label:'Approved'};
+  if(s.includes('approved'))    return{cls:'sp-green',label:'Approved'};
   if(s.includes('estimate')||s.includes('photo')) return{cls:'sp-purple',label:'Estimate'};
-  if(s.includes('towed'))      return{cls:'sp-grey',label:'Towed in'};
-  if(s.includes('outstanding'))return{cls:'sp-red',label:'Outstanding'};
+  if(s.includes('towed'))       return{cls:'sp-grey',label:'Towed in'};
+  if(s.includes('outstanding')) return{cls:'sp-red',label:'Outstanding'};
   return{cls:'sp-grey',label:status||'—'};
 }
 
@@ -968,30 +1104,50 @@ async function saveScheduleConfirm() {
 
   toast(`✅ ${schedJob.name} scheduled for ${date}`);
 
-  // Notify customer if requested
-  if (notify === 'sms' || notify === 'both') {
-    const phone = (schedJob.contact||'').replace(/\D/g,'');
-    if (phone) {
-      const firstName = schedJob.name.split(' ')[0];
-      const msg = `Hi ${firstName}, your ${schedJob.vehicle} repair is confirmed for ${date}. Call 604-278-5121 to reschedule if needed. South Seas Auto Body`;
-      window.open(`sms:+1${phone}?body=${encodeURIComponent(msg)}`, '_blank');
-      toast('SMS app opened — tap Send to confirm');
-    } else {
-      toast('No phone number on file for SMS');
-    }
-  }
-  if (notify === 'email' || notify === 'both') {
-    if (schedJob.email) {
-      const msg = `Hi ${schedJob.name},\n\nThis is a confirmation that your ${schedJob.vehicle} repair has been scheduled.\n\n📅 Scheduled Date: ${date}\n\nPlease arrive on time. If you need to reschedule, please call us at 604-278-5121.\n\nThank you for choosing South Seas Auto Body!\n\nSouth Seas Auto Body Team\n604-278-5121`;
-      await api('notifyCustomer', { email: schedJob.email, name: schedJob.name, vehicle: schedJob.vehicle, message: msg });
-      toast('Confirmation email sent to ' + schedJob.email);
-    } else {
-      toast('No email on file — save email in Update Status first');
-    }
-  }
-
   closeScheduleModal();
   doSearch();
+}
+
+// ── Schedule confirmation send helpers ────────────────────────
+function schedConfirmMsg() {
+  if(!schedJob) return '';
+  const date = document.getElementById('sched-date').value || '[date not set]';
+  return `Hi ${schedJob.name.split(' ')[0]}, your ${schedJob.vehicle} repair is confirmed for ${date}. Please call 604-278-5121 to reschedule if needed. South Seas Auto Body`;
+}
+function schedConfirmEmailBody() {
+  if(!schedJob) return '';
+  const date = document.getElementById('sched-date').value || '[date not set]';
+  const n = schedJob.name, v = schedJob.vehicle;
+  return `Dear ${n},\n\nThis confirms your vehicle repair appointment.\n\n📅 Date: ${date}\n🚗 Vehicle: ${v}\n\nPlease arrive on time. To reschedule call 604-278-5121.\n\nThank you for choosing South Seas Auto Body!\n\nSouth Seas Auto Body\n604-278-5121`;
+}
+function schedSendSMS() {
+  if(!schedJob) { toast('Open a job first'); return; }
+  const phone = (schedJob.contact||'').replace(/\D/g,'');
+  if(!phone) { toast('No phone number on file'); return; }
+  const msg = schedConfirmMsg();
+  window.open(`sms:+1${phone}?body=${encodeURIComponent(msg)}`, '_blank');
+  document.getElementById('sched-notify').value = 'sms';
+  document.getElementById('sched-sent-status').textContent = '💬 SMS opened — tap Send in your message app';
+}
+function schedSendEmail() {
+  if(!schedJob) { toast('Open a job first'); return; }
+  if(!schedJob.email) { toast('No email on file — save email in Update Status first'); return; }
+  const body = schedConfirmEmailBody();
+  api('notifyCustomer',{email:schedJob.email, name:schedJob.name, vehicle:schedJob.vehicle, message:body})
+    .then(r => {
+      if(r.ok) {
+        document.getElementById('sched-sent-status').textContent = '📧 Email sent to ' + schedJob.email;
+        document.getElementById('sched-notify').value = 'email';
+      } else {
+        toast('Email error: '+(r.error||'Unknown'));
+      }
+    });
+}
+async function schedSendBoth() {
+  schedSendSMS();
+  await new Promise(r=>setTimeout(r,400));
+  schedSendEmail();
+  document.getElementById('sched-notify').value = 'both';
 }
 
 function openNotifyFromUpdate() {
@@ -1061,9 +1217,9 @@ function switchNotifyTab(tab) {
 function getEmailMessage(type) {
   if(!notifyJob) return '';
   const n=notifyJob.name, v=notifyJob.vehicle;
-  const date=notifyJob.schedDate||notifyJob.outDate||'[DATE]';
+  const d=notifyJob.schedDate||notifyJob.outDate||'[scheduled date]';
   const msgs={
-    schedconf:`Hi ${n},\n\nThis is a confirmation that your ${v} repair has been scheduled.\n\n📅 Scheduled Date: ${date}\n\nPlease arrive on time. If you need to reschedule, call us at 604-278-5121.\n\nThank you for choosing South Seas Auto Body!\n\nSouth Seas Auto Body Team\n604-278-5121`,
+    schedconf:`Dear ${n},\n\nThis is to confirm that your vehicle repair has been scheduled.\n\n📅 Date: ${d}\n🚗 Vehicle: ${v}\n\nPlease arrive on time. To reschedule, call us at 604-278-5121.\n\nThank you for choosing South Seas Auto Body!\n\nSouth Seas Auto Body\n604-278-5121`,
     pickup:`Hi ${n},\n\nYour ${v} is ready for pickup today before 5pm. Please call us to confirm your pickup time.\n\nSouth Seas Auto Body\n604-278-5121`,
     parts:`Hi ${n},\n\nWe wanted to let you know that the parts for your ${v} have arrived.\n\nWe will be in touch shortly to schedule your appointment.\n\nThank you for your patience.\n\nSouth Seas Auto Body Team`,
     approved:`Hi ${n},\n\nYour estimate for the ${v} has been approved and we are now ordering the required parts.\n\nWe will contact you once the parts arrive to schedule your repair.\n\nSouth Seas Auto Body Team`,
@@ -1075,9 +1231,9 @@ function getEmailMessage(type) {
 function getSMSMessage(type) {
   if(!notifyJob) return '';
   const n=notifyJob.name.split(' ')[0], v=notifyJob.vehicle;
-  const date=notifyJob.schedDate||notifyJob.outDate||'[DATE]';
+  const d=notifyJob.schedDate||notifyJob.outDate||'[date]';
   const msgs={
-    schedconf:`Hi ${n}, your ${v} repair is confirmed for ${date}. Call 604-278-5121 to reschedule if needed. South Seas Auto Body`,
+    schedconf:`Hi ${n}, your ${v} repair is confirmed for ${d}. Call 604-278-5121 to reschedule. South Seas Auto Body`,
     pickup:`Hi ${n}, your ${v} is ready for pickup today before 5pm. Please call us to confirm. South Seas Auto Body 604-278-5121`,
     parts:`Hi ${n}, parts have arrived for your ${v}. We'll contact you shortly to schedule. South Seas Auto Body`,
     approved:`Hi ${n}, your estimate for the ${v} has been approved. We're ordering parts now. South Seas Auto Body`,
@@ -1306,11 +1462,14 @@ function toast(msg){
   clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),3500);
 }
 
-// Init
+// Init — show login first, don't load data yet
 document.addEventListener('DOMContentLoaded',()=>{
-  loadDashboard();
+  document.getElementById('copyright-footer').style.display = 'none';
   document.getElementById('search-results').innerHTML='<div class="empty">Type to search jobs</div>';
+  // Focus username field
+  setTimeout(()=>{ const el=document.getElementById('li-user'); if(el) el.focus(); }, 100);
 });
 </script>
+</div><!-- /main-content -->
 </body>
 </html>
