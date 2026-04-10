@@ -607,18 +607,28 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz1fTacFgTlkt-lSz2yi
 // Users: { username: { pass, role, display } }
 // Roles: owner = full; manager = full; staff = view+update; readonly = view only
 const USERS = {
-  'owner':   { pass: 'ssab2026!',  role: 'owner',    display: 'Owner' },
-  'john':    { pass: 'john2026',   role: 'manager',  display: 'John' },
-  'manager': { pass: 'mgr2026',    role: 'manager',  display: 'Manager' },
-  'aashi':   { pass: 'aashi2026',  role: 'staff',    display: 'Aashi' },
-  'nelson':  { pass: 'nelson2026', role: 'staff',    display: 'Nelson' },
-  'david':   { pass: 'david2026',  role: 'staff',    display: 'David' },
-  'rc':      { pass: 'rc2026',     role: 'staff',    display: 'RC' },
-  'johnny':  { pass: 'johnny2026', role: 'staff',    display: 'Johnny' },
-  'view':    { pass: 'view2026',   role: 'readonly', display: 'View Only' },
+  // ── OWNER (you — full access to everything) ──────────────────
+  'emily':   { pass: 'Emily@SSAB26',  role: 'owner',    display: 'Emily' },
+
+  // ── MANAGERS (full access) ────────────────────────────────────
+  'john':    { pass: 'John@2026',     role: 'manager',  display: 'John' },
+
+  // ── STAFF (can search, update status, add jobs) ───────────────
+  'aashi':   { pass: 'Aashi@2026',    role: 'staff',    display: 'Aashi' },
+  'nelson':  { pass: 'Nelson@2026',   role: 'staff',    display: 'Nelson' },
+  'david':   { pass: 'David@2026',    role: 'staff',    display: 'David' },
+  'rc':      { pass: 'RC@2026',       role: 'staff',    display: 'RC' },
+  'johnny':  { pass: 'Johnny@2026',   role: 'staff',    display: 'Johnny' },
+
+  // ── READ ONLY (view only, no edits) ──────────────────────────
+  'view':    { pass: 'View@2026',     role: 'readonly', display: 'View Only' },
 };
-// ⚠️  Change these passwords — do not share this file publicly
-// To add a user: add a line above. To remove access: delete the line.
+// ─────────────────────────────────────────────────────────────────
+// TO CHANGE A PASSWORD: edit the pass value for that user above
+// TO ADD A USER: copy any line and change the username, pass, role, display
+// TO REMOVE ACCESS: delete that user's line
+// ROLES: owner = everything | manager = everything | staff = update+add | readonly = view only
+// ─────────────────────────────────────────────────────────────────
 
 let currentUser = null;
 let currentRole = null;
