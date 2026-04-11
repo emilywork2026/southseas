@@ -73,7 +73,7 @@ textarea{resize:vertical;min-height:72px;}
 /* JOB CARDS */
 .job-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:8px;cursor:pointer;transition:border-color .15s;}
 .job-card:hover{border-color:var(--navy);}
-.job-card.expanded{border-color:var(--navy);}
+.job-card.expanded{border-color:var(--navy);background:rgba(31,56,100,.02);}
 .job-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
 .job-name{font-size:14px;font-weight:600;color:var(--text);}
 .job-vehicle{font-size:12px;color:var(--muted);margin-top:2px;}
@@ -944,44 +944,102 @@ async function doSearch() {
 }
 
 function jobCard(j) {
-  const sp=statusPill(j.status); const hrs=j.hrs>0?`${j.hrs} hrs`:'';
-  const key=storeJob(j);
-  return `<div class="job-card" onclick="toggleJobCard(this)">
+  const sp  = statusPill(j.status);
+  const hrs = j.hrs > 0 ? `${j.hrs} hrs` : '';
+  const key = storeJob(j);
+  const isExpanded = false; // starts collapsed
+
+  // Source badge — WIP is live data, NJL is pipeline
+  const srcBadge = j.source === 'WIP'
+    ? `<span style="font-size:10px;background:#EFF6FF;color:#1D4ED8;padding:1px 6px;border-radius:99px;font-weight:600">WIP</span>`
+    : `<span style="font-size:10px;background:#F9FAFB;color:#6B7280;padding:1px 6px;border-radius:99px;font-weight:600">NJL</span>`;
+
+  // Scheduled date — from NJL schedDate or WIP outDate
+  const schedLine = j.schedDate && j.schedDate !== j.outDate
+    ? `<span style="font-size:11px;color:var(--blue)">Sched: ${esc(j.schedDate)}</span>` : '';
+
+  return `<div class="job-card" onclick="toggleJobCard(this)" style="cursor:pointer">
+    <!-- ── COLLAPSED VIEW (always visible) ── -->
     <div class="job-top">
-      <div>
-        <div class="job-name">${esc(j.name)}</div>
-        <div class="job-vehicle">${esc(j.vehicle)}${j.plate?' · <b>'+esc(j.plate)+'</b>':''}</div>
-        <div class="job-ids">WO: ${esc(j.wo)}${j.claim?' · '+esc(j.claim):''}</div>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <div class="job-name">${esc(j.name)}</div>
+          ${srcBadge}
+        </div>
+        <div class="job-vehicle">${esc(j.vehicle)}${j.plate ? ' · <b>' + esc(j.plate) + '</b>' : ''}</div>
+        <div class="job-ids">WO: ${esc(j.wo)}${j.claim ? ' · ' + esc(j.claim) : ''}</div>
       </div>
       <div class="job-right">
         <span class="spill ${sp.cls}">${sp.label}</span>
-        ${j.inDate?`<span style="font-size:11px;color:var(--muted)">IN: ${esc(j.inDate)}</span>`:''}
-        ${j.outDate?`<span style="font-size:11px;color:var(--green)">OUT: ${esc(j.outDate)}</span>`:''}
-        ${hrs?`<span style="font-size:11px;color:var(--muted)">${hrs}</span>`:''}
+        ${j.inDate ? `<span style="font-size:11px;color:var(--muted)">IN: ${esc(j.inDate)}</span>` : ''}
+        ${schedLine}
+        ${j.outDate ? `<span style="font-size:11px;color:var(--green)">Pickup: ${esc(j.outDate)}</span>` : ''}
+        ${hrs ? `<span style="font-size:11px;color:var(--muted)">${hrs}</span>` : ''}
+        <span style="font-size:10px;color:var(--muted);margin-top:2px">tap for details ▾</span>
       </div>
     </div>
+
+    <!-- ── EXPANDED DETAIL (shown on click) ── -->
     <div class="job-detail">
-      <div class="detail-grid">
-        <div class="detail-item"><label>Contact</label><span>${esc(j.contact)||'—'}</span></div>
-        <div class="detail-item"><label>Courtesy car</label><span>${esc(j.cc)||'—'}</span></div>
-        <div class="detail-item"><label>Body tech</label><span>${esc(j.bodyTech)||'—'}</span></div>
-        <div class="detail-item"><label>Paint tech</label><span>${esc(j.paintTech)||'—'}</span></div>
-        <div class="detail-item"><label>Payment</label><span>${esc(j.payment)||'—'}</span></div>
-        <div class="detail-item"><label>Email</label><span style="font-size:11px">${esc(j.email)||'—'}</span></div>
+
+      <!-- Row 1: Dates -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
+        <div class="detail-item">
+          <label>Intake date</label>
+          <span>${esc(j.inDate) || '—'}</span>
+        </div>
+        <div class="detail-item">
+          <label>Scheduled date</label>
+          <span style="color:var(--blue);font-weight:500">${esc(j.schedDate) || '—'}</span>
+        </div>
+        <div class="detail-item">
+          <label>Pickup date</label>
+          <span style="color:var(--green)">${esc(j.outDate) || '—'}</span>
+        </div>
       </div>
-      ${j.notes?`<div class="notes-box">${esc(j.notes)}</div>`:''}
+
+      <!-- Row 2: People + car info -->
+      <div class="detail-grid">
+        <div class="detail-item"><label>Contact</label>
+          <span>${j.contact
+            ? `<a href="tel:${j.contact.replace(/\D/g,'')}" onclick="event.stopPropagation()" style="color:var(--blue)">${esc(j.contact)}</a>`
+            : '—'}</span>
+        </div>
+        <div class="detail-item"><label>Courtesy car</label><span>${esc(j.cc) || '—'}</span></div>
+        <div class="detail-item"><label>Body tech</label>
+          <span style="font-weight:500">${esc(j.bodyTech) || '—'}</span>
+        </div>
+        <div class="detail-item"><label>Paint tech</label>
+          <span style="font-weight:500">${esc(j.paintTech) || '—'}</span>
+        </div>
+        <div class="detail-item"><label>B hrs / P hrs</label>
+          <span><b style="color:var(--blue)">${j.b || 0}</b> / <b style="color:var(--purple)">${j.p || 0}</b>${hrs ? ' = ' + hrs : ''}</span>
+        </div>
+        <div class="detail-item"><label>Payment</label><span>${esc(j.payment) || '—'}</span></div>
+      </div>
+
+      <!-- Row 3: Email -->
+      ${j.email ? `<div style="font-size:11px;color:var(--muted);margin-bottom:8px">
+        📧 <a href="mailto:${esc(j.email)}" onclick="event.stopPropagation()" style="color:var(--blue)">${esc(j.email)}</a>
+      </div>` : ''}
+
+      <!-- Notes -->
+      ${j.notes ? `<div class="notes-box">📝 ${esc(j.notes)}</div>` : ''}
+
+      <!-- Action buttons -->
       <div class="btn-row">
-        <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();openUpdateKey('${key}')">Update status</button>
+        <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();openUpdateKey('${key}')">✏️ Update status</button>
         ${(()=>{const sl=(j.status||'').toLowerCase();
           return sl.includes('parts arrived')||sl.includes('arrived')||
                  sl.includes('approved')||sl==='schedule'||sl.includes('ordered');})() ?
           `<button class="btn btn-success btn-sm" onclick="event.stopPropagation();openScheduleKey('${key}')" style="font-weight:600">📅 Confirm Schedule</button>` : ''}
-        <button class="btn btn-warn btn-sm" onclick="event.stopPropagation();openNotifyKey('${key}')">Notify</button>
-        ${j.contact?`<a class="btn btn-sm" href="tel:${j.contact.replace(/\D/g,'')}" onclick="event.stopPropagation()">Call</a>`:''}
+        <button class="btn btn-warn btn-sm" onclick="event.stopPropagation();openNotifyKey('${key}')">📱 Notify</button>
+        ${j.contact ? `<a class="btn btn-sm" href="tel:${j.contact.replace(/\D/g,'')}" onclick="event.stopPropagation()">📞 Call</a>` : ''}
       </div>
     </div>
   </div>`;
 }
+
 
 function toggleJobCard(el){el.classList.toggle('expanded');}
 
