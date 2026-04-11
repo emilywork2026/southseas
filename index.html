@@ -186,9 +186,69 @@ textarea{resize:vertical;min-height:72px;}
 .badge{display:inline-block;font-size:10px;font-weight:600;padding:2px 7px;border-radius:99px;margin-left:4px;}
 .badge-red{background:#FEE2E2;color:#B91C1C;}
 .badge-green{background:#DCFCE7;color:#15803D;}
+
+/* ── LOGIN ─────────────────────────────────────── */
+#login-screen {
+  position:fixed;inset:0;z-index:9999;
+  background:linear-gradient(135deg,#1F3864 0%,#0D9488 100%);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Arial',sans-serif;
+}
+.login-card {
+  background:#fff;border-radius:16px;padding:40px 36px;
+  width:340px;max-width:90vw;
+  box-shadow:0 20px 60px rgba(0,0,0,0.3);
+}
+.login-logo { text-align:center;margin-bottom:28px; }
+.login-logo h1 { font-size:20px;font-weight:700;color:#1F3864;margin:0;letter-spacing:-0.5px; }
+.login-logo p { font-size:12px;color:#9CA3AF;margin:4px 0 0; }
+.login-field { margin-bottom:16px; }
+.login-field label { display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px; }
+.login-field input {
+  width:100%;box-sizing:border-box;padding:10px 14px;
+  border:1.5px solid #E5E7EB;border-radius:8px;
+  font-size:14px;outline:none;transition:border .2s;
+}
+.login-field input:focus { border-color:#0D9488; }
+.login-btn {
+  width:100%;padding:12px;background:#1F3864;color:#fff;
+  border:none;border-radius:8px;font-size:15px;font-weight:600;
+  cursor:pointer;transition:background .2s;margin-top:4px;
+}
+.login-btn:hover { background:#0D9488; }
+.login-error { color:#EF4444;font-size:12px;text-align:center;margin-top:12px;min-height:18px; }
+.login-badge {
+  display:inline-block;background:#F0FDF4;color:#15803D;
+  font-size:10px;font-weight:600;padding:2px 8px;border-radius:99px;
+  border:1px solid #BBF7D0;margin-left:6px;
+}
 </style>
+
 </head>
 <body>
+
+<!-- ═══ LOGIN SCREEN ═══ -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <h1>🔧 South Seas Auto Body</h1>
+      <p>Job Management System</p>
+    </div>
+    <div class="login-field">
+      <label>Username</label>
+      <input type="text" id="login-user" placeholder="Enter username" autocomplete="username"
+             onkeydown="if(event.key==='Enter')document.getElementById('login-pass').focus()">
+    </div>
+    <div class="login-field">
+      <label>Password</label>
+      <input type="password" id="login-pass" placeholder="Enter password" autocomplete="current-password"
+             onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="login-btn" onclick="doLogin()">Sign In</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
 
 <nav class="nav">
   <div class="nav-logo">South Seas<span>Auto Body</span></div>
@@ -534,7 +594,7 @@ textarea{resize:vertical;min-height:72px;}
 <div class="toast" id="toast"></div>
 
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxVtHu9CdXlWBxuKV0r0muPjhghlw4SIOHVqAhRmLeGYks1wqxdoI--RijOw7F4hg1J/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz1fTacFgTlkt-lSz2yi9qhumUm7tpZR9xGyPZV2J1aKVhSQqCcYBJf_CwucC8An4_Vtg/exec';
 
 // ══ COURTESY CARS ════════════════════════════════
 const CC_PLATES = ['VJ785L','TX235X','NW391N','SB272H','LK854L',
@@ -930,6 +990,7 @@ function closeScheduleModal() {
 }
 
 async function saveScheduleConfirm() {
+  if(!checkPermission()) return;
   if (!schedJob) return;
   const date     = document.getElementById('sched-date').value;
   const bodyTech = document.getElementById('sched-body').value;
@@ -999,6 +1060,7 @@ function openNotifyFromUpdate() {
 }
 
 async function saveUpdate() {
+  if(!checkPermission()) return;
   if(!currentJob) return;
   const partsReturn = document.getElementById('m-parts-return').checked;
   const payload={
@@ -1311,5 +1373,107 @@ document.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('search-results').innerHTML='<div class="empty">Type to search jobs</div>';
 });
 </script>
+
+<script>
+// ── USERS ─────────────────────────────────────────────────────
+// Roles: owner = full access, manager = full access, viewer = read only
+const USERS = {
+  'emily': { password: 'Joes@0302', role: 'owner',   name: 'Emily'  },
+  'john':  { password: 'John@2026', role: 'manager',  name: 'John'   },
+  'view':  { password: 'View@2026', role: 'viewer',   name: 'Viewer' },
+};
+
+let currentUser = null;
+
+function doLogin() {
+  const user = document.getElementById('login-user').value.trim().toLowerCase();
+  const pass = document.getElementById('login-pass').value;
+  const err  = document.getElementById('login-error');
+
+  if (!USERS[user] || USERS[user].password !== pass) {
+    err.textContent = 'Incorrect username or password';
+    document.getElementById('login-pass').value = '';
+    return;
+  }
+
+  currentUser = { username: user, ...USERS[user] };
+  sessionStorage.setItem('ssab_user', JSON.stringify(currentUser));
+
+  // Hide login screen
+  document.getElementById('login-screen').style.display = 'none';
+  initApp();
+}
+
+function checkSession() {
+  const saved = sessionStorage.getItem('ssab_user');
+  if (saved) {
+    try {
+      currentUser = JSON.parse(saved);
+      document.getElementById('login-screen').style.display = 'none';
+      initApp();
+      return true;
+    } catch(_) {}
+  }
+  return false;
+}
+
+function doLogout() {
+  sessionStorage.removeItem('ssab_user');
+  currentUser = null;
+  location.reload();
+}
+
+function initApp() {
+  // Show nav and content
+  document.querySelector('.nav').style.display = '';
+  document.querySelector('.content').style.display = '';
+
+  // Apply role restrictions
+  if (currentUser.role === 'viewer') {
+    // Hide add/edit buttons for read-only
+    document.querySelectorAll('.btn-primary, .btn-warn, .btn-success').forEach(btn => {
+      if (!btn.closest('#modal-update') && !btn.closest('#modal-schedule') &&
+          !btn.closest('#modal-notify')) {
+        btn.style.display = 'none';
+      }
+    });
+  }
+
+  // Add user badge to nav
+  const nav = document.querySelector('.nav');
+  const badge = document.createElement('div');
+  badge.style.cssText = 'margin-left:auto;display:flex;align-items:center;gap:10px;padding-right:8px';
+  badge.innerHTML = `
+    <span style="font-size:11px;color:#CBD5E1">
+      ${currentUser.name}
+      <span class="login-badge">${currentUser.role}</span>
+    </span>
+    <button onclick="doLogout()" style="background:rgba(255,255,255,0.15);border:none;color:#fff;
+      padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer;">Sign out</button>
+  `;
+  nav.appendChild(badge);
+
+  // Load dashboard
+  showPage('dashboard');
+}
+
+// ── BLOCK ACTIONS FOR VIEWER ROLE ─────────────────────────────
+function checkPermission(action) {
+  if (currentUser && currentUser.role === 'viewer') {
+    toast('Read-only access — contact Emily to make changes');
+    return false;
+  }
+  return true;
+}
+
+// On page load — check session or show login
+window.addEventListener('load', () => {
+  // Hide nav and content until logged in
+  document.querySelector('.nav').style.display = 'none';
+  document.querySelector('.content').style.display = 'none';
+  checkSession();
+});
+</script>
+
 </body>
 </html>
