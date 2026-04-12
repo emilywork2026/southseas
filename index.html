@@ -304,8 +304,17 @@ textarea{resize:vertical;min-height:72px;}
       <button class="btn btn-sm" onclick="showPage('cars')">View all</button>
     </div>
     <div id="dash-cc-summary" class="grid-4"></div>
+    <div id="dash-cc-detail" style="margin-top:10px"></div>
   </div>
-  <!-- Weekly hours mini -->
+  <!-- Next week scheduled hours -->
+  <div class="card" style="margin-bottom:14px">
+    <div class="sec-hd" style="margin-bottom:10px">
+      <div class="sec-title" style="font-size:14px">📅 Next week scheduled hours</div>
+      <span id="dash-next-week-label" style="font-size:11px;color:var(--muted)"></span>
+    </div>
+    <div id="dash-next-week"></div>
+  </div>
+  <!-- Tech hours (all time) -->
   <div class="card" style="margin-bottom:14px">
     <div class="sec-hd" style="margin-bottom:10px">
       <div class="sec-title" style="font-size:14px">Tech hours (all time)</div>
@@ -424,8 +433,8 @@ textarea{resize:vertical;min-height:72px;}
       <div class="form-group"><label class="form-label">Scheduled Date</label><input type="date" id="f-sched"></div>
     </div>
     <div class="form-row">
-      <div class="form-group"><label class="form-label">Body tech</label><select id="f-body"><option value="">—</option><option>Aashi</option><option>Nelson</option><option>RC</option><option>David</option><option>Johnny</option><option>John</option><option>Ammar Ali</option><option>Marco</option></select></div>
-      <div class="form-group"><label class="form-label">Paint tech</label><select id="f-paint"><option value="">—</option><option>Aashi</option><option>Nelson</option><option>RC</option><option>David</option><option>Johnny</option><option>John</option><option>Ammar Ali</option><option>Marco</option></select></div>
+      <div class="form-group"><label class="form-label">Body tech</label><select id="f-body" class="staff-select"><option value="">—</option></select></div>
+      <div class="form-group"><label class="form-label">Paint tech</label><select id="f-paint" class="staff-select"><option value="">—</option></select></div>
     </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">B Hours</label><input type="text" id="f-b" placeholder="0.0"></div>
@@ -457,7 +466,7 @@ textarea{resize:vertical;min-height:72px;}
     <div class="modal-hd"><div class="modal-title">Update job</div><button class="modal-close" onclick="closeModal()">&times;</button></div>
     <div id="modal-job-summary" style="background:var(--bg);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:13px;"></div>
     <div class="form-group"><label class="form-label">Status</label>
-      <select id="m-status" onchange="togglePartsReturn(this.value)"><option>Estimate/Photo</option><option>Estimate Pending Review</option><option>Estimate Approved</option><option>Order Parts</option><option>Ordered Parts</option><option>Parts arrived</option><option>Schedule</option><option>In Progress</option><option>Picked up</option><option>Outstanding Balance</option><option>No Show</option><option>Cancelled</option><option>Total Loss</option><option>Shop Change Request</option></select>
+      <select id="m-status" onchange="togglePartsReturn(this.value)"><option value="">—</option><option>Towed IN</option><option>Estimate/Photo</option><option>Estimate Pending Review</option><option>Estimate Approved</option><option>Order Parts</option><option>Ordered Parts</option><option>Parts arrived</option><option>Schedule</option><option>WIP</option><option>In Progress</option><option>Refix</option><option>Outstanding Balance</option><option>Ready for Pickup</option><option>Picked up</option><option>No Show</option><option>Cancelled</option><option>Total Loss</option><option>Shop Change Request</option></select>
     </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">OUT Date</label><input type="date" id="m-out"></div>
@@ -466,8 +475,8 @@ textarea{resize:vertical;min-height:72px;}
       </div>
     </div>
     <div class="form-row">
-      <div class="form-group"><label class="form-label">Body tech</label><select id="m-body"><option value="">—</option><option>Aashi</option><option>Nelson</option><option>RC</option><option>David</option><option>Johnny</option><option>John</option><option>Ammar Ali</option><option>Marco</option></select></div>
-      <div class="form-group"><label class="form-label">Paint tech</label><select id="m-paint"><option value="">—</option><option>Aashi</option><option>Nelson</option><option>RC</option><option>David</option><option>Johnny</option><option>John</option><option>Ammar Ali</option><option>Marco</option></select></div>
+      <div class="form-group"><label class="form-label">Body tech</label><select id="m-body" class="staff-select"><option value="">—</option></select></div>
+      <div class="form-group"><label class="form-label">Paint tech</label><select id="m-paint" class="staff-select"><option value="">—</option></select></div>
     </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">B Hours</label><input type="text" id="m-b" placeholder="0.0"></div>
@@ -594,7 +603,23 @@ textarea{resize:vertical;min-height:72px;}
 <div class="toast" id="toast"></div>
 
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyyP_FY8Dix0xqFhi_omqGHiQ85Y70ypPDK2xzXw9kRKZc0gxoFYWFzt3YUliuMW2yn/exec';
+// ── CONSTANTS ─────────────────────────────────────────────────
+const STAFF = ['Aashi','Nelson','RC','David','Johnny','John','Ammar Ali','Marco','Katty','Ami'];
+const CC_PLATES = ['VJ785L','TX235X','NW391N','SB272H','LK854L','TN321R','VJ571K','SB252H','XP926R','TX225X','VN281J'];
+
+// Build staff options HTML once
+const STAFF_OPTS = '<option value="">—</option>'+STAFF.map(s=>`<option>${s}</option>`).join('');
+
+// Populate all staff selects on load
+function populateStaffSelects() {
+  document.querySelectorAll('select.staff-select').forEach(sel => {
+    const val = sel.value;
+    sel.innerHTML = STAFF_OPTS;
+    sel.value = val;
+  });
+}
+
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz1fTacFgTlkt-lSz2yi9qhumUm7tpZR9xGyPZV2J1aKVhSQqCcYBJf_CwucC8An4_Vtg/exec';
 
 // ══ COURTESY CARS ════════════════════════════════
 const CC_PLATES = ['VJ785L','TX235X','NW391N','SB272H','LK854L',
@@ -607,6 +632,7 @@ function showPage(id) {
   document.getElementById('page-'+id).classList.add('active');
   document.getElementById('nb-'+id).classList.add('active');
   if(id==='dashboard') loadDashboard();
+  if(id==='search') { getSearchCache(); } // pre-warm cache silently
   if(id==='search')    initSearch();
   if(id==='schedule')  loadSchedule();
   if(id==='techs')     loadTechHours();
@@ -660,15 +686,69 @@ async function loadDashboard() {
        </div></div>`).join('');
   }
 
-  // CC summary on dashboard — from getDashboard ccInUse
+  // CC summary on dashboard — show per-plate status
   if(dashData.ok && dashData.counts) {
-    const ccInUse = dashData.counts.ccInUse || {};
-    const inUseCount = Object.keys(ccInUse).length;
-    const availCount = CC_PLATES.length - inUseCount;
+    const ccInUse  = dashData.counts.ccInUse  || {};
+    const ccStatus = dashData.counts.ccStatus || {};
+    const inUseCount  = Object.keys(ccInUse).length;
+    const availCount  = CC_PLATES.length - inUseCount;
+
     document.getElementById('dash-cc-summary').innerHTML=
       `<div class="stat"><div class="stat-label">Available</div><div class="stat-val" style="color:var(--green)">${availCount}</div></div>
        <div class="stat"><div class="stat-label">In use</div><div class="stat-val" style="color:var(--red)">${inUseCount}</div></div>
-       <div class="stat"><div class="stat-label">Total</div><div class="stat-val">${CC_PLATES.length}</div></div>`;
+       <div class="stat"><div class="stat-label">Total fleet</div><div class="stat-val">${CC_PLATES.length}</div></div>`;
+
+    // Per-plate detail
+    const plateRows = CC_PLATES.map(plate => {
+      const info = ccInUse[plate];
+      if (info) {
+        return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border)">
+          <span style="font-size:11px;font-weight:700;color:#EF4444;min-width:70px">🔴 ${plate}</span>
+          <span style="font-size:11px;color:var(--text)">${esc(info.name||'')}</span>
+          <span style="font-size:10px;color:var(--muted);margin-left:auto">${esc(info.status||'')}</span>
+        </div>`;
+      } else {
+        return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border)">
+          <span style="font-size:11px;font-weight:700;color:#15803D;min-width:70px">🟢 ${plate}</span>
+          <span style="font-size:11px;color:var(--muted)">Available</span>
+        </div>`;
+      }
+    }).join('');
+    document.getElementById('dash-cc-detail').innerHTML = plateRows;
+  }
+
+  // Next week scheduled hours
+  if(dashData.ok && dashData.counts && dashData.counts.nextWeek) {
+    const nw = dashData.counts.nextWeek;
+    // Calculate next week label
+    const now = new Date(); const dow = now.getDay();
+    const diff = dow===0 ? 1 : 8-dow;
+    const nextMon = new Date(now); nextMon.setDate(now.getDate()+diff);
+    const nextSun = new Date(nextMon); nextSun.setDate(nextMon.getDate()+6);
+    const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const label = `${nextMon.getDate()} ${months[nextMon.getMonth()]} – ${nextSun.getDate()} ${months[nextSun.getMonth()]}`;
+    document.getElementById('dash-next-week-label').textContent = label;
+
+    let nwHtml = `<div style="display:flex;gap:20px;padding:10px 0;border-bottom:1px solid var(--border);margin-bottom:8px">
+      <span style="font-size:13px;color:var(--muted)">Body: <strong style="color:var(--blue);font-size:18px">${nw.b.toFixed(1)}</strong> hrs</span>
+      <span style="font-size:13px;color:var(--muted)">Paint: <strong style="color:var(--purple);font-size:18px">${nw.p.toFixed(1)}</strong> hrs</span>
+      <span style="font-size:13px;color:var(--muted)">Total: <strong style="font-size:18px">${nw.total.toFixed(1)}</strong> hrs</span>
+    </div>`;
+
+    if(nw.jobs && nw.jobs.length) {
+      nwHtml += nw.jobs.map(j=>`
+        <div class="week-row">
+          <span style="font-size:12px">${esc(j.name)} <span style="color:var(--muted)">${esc(j.vehicle||'')}</span></span>
+          <div style="display:flex;gap:10px;font-size:11px">
+            <span style="color:var(--blue)">B:${j.b.toFixed(1)}</span>
+            <span style="color:var(--purple)">P:${j.p.toFixed(1)}</span>
+            <span style="color:var(--muted)">${esc(j.sched)}</span>
+          </div>
+        </div>`).join('');
+    } else {
+      nwHtml += '<div class="empty">No jobs scheduled next week yet</div>';
+    }
+    document.getElementById('dash-next-week').innerHTML = nwHtml;
   }
 
   // Tech hours on dashboard — use getDashboard techHours (includes all jobs)
@@ -730,7 +810,50 @@ function setFilter(id,el) {
   el.classList.add('active'); doSearch();
 }
 
-function onSearchInput() { clearTimeout(searchTimer); searchTimer=setTimeout(doSearch,280); }
+function onSearchInput() { clearTimeout(searchTimer); searchTimer=setTimeout(doSearch,180); }
+
+// ── SEARCH CACHE — load all jobs once, filter locally ────────
+let searchCache = null;
+let searchCacheTime = 0;
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+async function getSearchCache() {
+  const now = Date.now();
+  if (searchCache && (now - searchCacheTime) < CACHE_TTL) return searchCache;
+  // Load all jobs from API
+  const data = await api('search', {query:'', filter:'all'});
+  if (data.ok && data.jobs) {
+    searchCache = data.jobs;
+    searchCacheTime = now;
+    // Build search index — lowercase string per job for fast matching
+    searchCache.forEach(j => {
+      j._idx = [j.name,j.wo,j.claim,j.vehicle,j.plate,j.contact,j.notes,j.status]
+        .join(' ').toLowerCase();
+    });
+  }
+  return searchCache;
+}
+
+function invalidateSearchCache() { searchCache = null; }
+
+function jobMatchesQuery(j, q, filter) {
+  if (q && !j._idx.includes(q.toLowerCase())) return false;
+  if (!jobMatchesDateRange(j)) return false;
+  if (!jobMatchesPhone(j)) return false;
+  if (!filter || filter==='all') return true;
+  const s=(j.status||'').toLowerCase();
+  switch(filter) {
+    case 'active':    return !['picked up','cancelled','no show','total loss'].some(x=>s.includes(x));
+    case 'pickedup':  return s.includes('picked up');
+    case 'scheduled': return s.includes('schedule');
+    case 'parts':     return s.includes('part');
+    case 'estimate':  return s.includes('estimate')||s.includes('photo');
+    case 'cancelled': return s.includes('cancel')||s.includes('total loss');
+    case 'private':   return (j.wo||'').toLowerCase().includes('private')||(j.po||'').toLowerCase().includes('private');
+    case 'noshow':    return s.includes('no show');
+    default: return true;
+  }
+}
 
 function clearDates() {
   document.getElementById('date-from').value='';
@@ -805,14 +928,17 @@ async function doSearch() {
     el.innerHTML='<div class="empty">Type to search, or use filters above</div>';
     document.getElementById('search-meta').textContent=''; return;
   }
-  el.innerHTML='<div class="loading"><div class="spinner"></div>Searching…</div>';
-  const data=await api('search',{query:q,filter:activeFilter});
-  if(!data.ok){el.innerHTML='<div class="empty">Error searching</div>';return;}
-  const jobs=(data.jobs||[]).filter(j=>jobMatchesDateRange(j)&&jobMatchesPhone(j));
+  // Show loading only if cache is empty
+  if (!searchCache) el.innerHTML='<div class="loading"><div class="spinner"></div>Loading…</div>';
+
+  const allJobs = await getSearchCache();
+  if (!allJobs) { el.innerHTML='<div class="empty">Error loading jobs</div>'; return; }
+
+  const jobs = allJobs.filter(j => jobMatchesQuery(j, q, activeFilter));
   document.getElementById('search-meta').textContent=
     jobs.length?`${jobs.length} job${jobs.length!==1?'s':''} found`:'';
   if(!jobs.length){el.innerHTML='<div class="empty">No jobs found</div>';return;}
-  el.innerHTML=jobs.map(j=>jobCard(j)).join('');
+  el.innerHTML=jobs.slice(0,150).map(j=>jobCard(j)).join('');
 }
 
 function jobCard(j) {
@@ -1016,7 +1142,7 @@ async function saveScheduleConfirm() {
   const res = await api('updateStatus', payload);
   btn.textContent = '✅ Confirm Schedule'; btn.disabled = false;
 
-  if (!res.ok) { toast('Error: '+(res.error||'Unknown')); return; }
+  if (!res || !res.ok) { toast('Error: '+(res.error||'Unknown')); return; }
 
   toast(`✅ ${schedJob.name} scheduled for ${date}`);
 
@@ -1080,7 +1206,11 @@ async function saveUpdate() {
   // Update local job object with new email so Notify modal gets it
   if(payload.email) currentJob.email = payload.email;
   const res=await api('updateStatus',payload);
-  if(res.ok){ toast('Job updated successfully'+(partsReturn?' + Parts Return logged':'')); closeModal(); doSearch(); }
+  if(res.ok){ 
+    invalidateSearchCache();
+    toast('Job updated successfully'+(partsReturn?' + Parts Return logged':'')); 
+    closeModal(); doSearch(); 
+  }
   else toast('Error: '+(res.error||'Unknown error'));
 }
 
@@ -1453,6 +1583,7 @@ function initApp() {
   `;
   nav.appendChild(badge);
 
+  populateStaffSelects();
   // Load dashboard
   showPage('dashboard');
 }
