@@ -619,7 +619,9 @@ function populateStaffSelects() {
   });
 }
 
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw_sn934ipvwxEUuopHTZ2Ngpjq9lTaPqMOZHbHuWf-sOIE9cPD4gdv8kOhynrK3LQyuw/exec';
+// ▼▼▼ PASTE YOUR NEW APPS SCRIPT WEB APP URL HERE ▼▼▼
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz1fTacFgTlkt-lSz2yi9qhumUm7tpZR9xGyPZV2J1aKVhSQqCcYBJf_CwucC8An4_Vtg/exec';
+// ▲▲▲ After deploying new Apps Script version, replace the URL above ▲▲▲
 
 // ══ COURTESY CARS ════════════════════════════════
 const CC_PLATES = ['VJ785L','TX235X','NW391N','SB272H','LK854L',
@@ -644,21 +646,51 @@ async function api(action, body={}) {
   try {
     const params = new URLSearchParams({action});
     Object.entries(body).forEach(([k,v])=>{ if(v!==undefined&&v!==null) params.set(k,String(v)); });
-    const res  = await fetch(SCRIPT_URL+'?'+params.toString(),{method:'GET',redirect:'follow'});
+    const url = SCRIPT_URL+'?'+params.toString();
+    const res  = await fetch(url, {method:'GET', redirect:'follow'});
+    if (!res.ok) {
+      console.error('HTTP error', res.status, 'for action:', action);
+      return {ok:false, error:'HTTP '+res.status};
+    }
     const text = await res.text();
-    try { return JSON.parse(text); }
-    catch(e) { console.error('Response:',text.slice(0,300)); return {ok:false,error:'Invalid response'}; }
-  } catch(err) { return {ok:false,error:err.message}; }
+    try {
+      const data = JSON.parse(text);
+      if (!data.ok && data.error) console.error('API error ('+action+'):', data.error);
+      return data;
+    } catch(e) {
+      console.error('JSON parse error for action:', action, '\nResponse:', text.slice(0,500));
+      return {ok:false, error:'Invalid JSON response — check SCRIPT_URL is correct and deployed'};
+    }
+  } catch(err) {
+    console.error('Fetch error for action:', action, err.message);
+    return {ok:false, error:err.message};
+  }
 }
 
 // ══ DASHBOARD ════════════════════════════════════
 async function loadDashboard() {
   document.getElementById('dash-asof').textContent='Loading…';
-  const [dashData, schedData] = await Promise.all([
-    api('getDashboard'), api('getSchedule')
-  ]);
+  // Show loading state on all stat elements
+  document.querySelectorAll('.stat-val').forEach(el=>el.textContent='…');
 
-  if(dashData.ok||dashData.counts) {
+  let dashData, schedData;
+  try {
+    [dashData, schedData] = await Promise.all([
+      api('getDashboard'), api('getSchedule')
+    ]);
+  } catch(err) {
+    document.getElementById('dash-asof').textContent='Error: '+err.message;
+    return;
+  }
+
+  if (!dashData || !dashData.ok || !dashData.counts) {
+    const errMsg = dashData?.error || 'No data returned — check SCRIPT_URL in index.html and redeploy Apps Script';
+    document.getElementById('dash-asof').textContent = '⚠️ '+errMsg;
+    console.error('Dashboard error:', dashData);
+    return;
+  }
+
+  if(dashData.ok && dashData.counts) {
     const c=dashData.counts; const fmt=n=>Math.round(n||0);
     document.getElementById('d-tin').textContent   =fmt(c.todayIN);
     document.getElementById('d-tout').textContent  =fmt(c.todayOUT);
@@ -1584,7 +1616,19 @@ function initApp() {
   nav.appendChild(badge);
 
   populateStaffSelects();
-  // Load dashboard
+
+  // Test API connection first — gives clear error if URL is wrong
+  api('ping').then(res => {
+    if (!res.ok) {
+      const msg = '⚠️ Cannot connect to Google Sheets. Check that:\n'
+        + '1. SCRIPT_URL in index.html is your latest deployed URL\n'
+        + '2. The Apps Script is deployed as Web App (Anyone can access)\n'
+        + '3. You ran setupTriggers after pasting the script\n\nError: '+(res.error||'Unknown');
+      alert(msg);
+      document.getElementById('dash-asof').textContent = '⚠️ Connection failed — see console for details';
+    }
+  });
+
   showPage('dashboard');
 }
 
