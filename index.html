@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>South Seas Auto Body</title>
 <style>
@@ -620,7 +621,7 @@ function populateStaffSelects() {
 }
 
 // ▼▼▼ PASTE YOUR NEW APPS SCRIPT WEB APP URL HERE ▼▼▼
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw_sn934ipvwxEUuopHTZ2Ngpjq9lTaPqMOZHbHuWf-sOIE9cPD4gdv8kOhynrK3LQyuw/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz1fTacFgTlkt-lSz2yi9qhumUm7tpZR9xGyPZV2J1aKVhSQqCcYBJf_CwucC8An4_Vtg/exec';
 // ▲▲▲ After deploying new Apps Script version, replace the URL above ▲▲▲
 
 // ══ NAVIGATION ═══════════════════════════════════
@@ -1530,9 +1531,8 @@ document.addEventListener('DOMContentLoaded',()=>{
   loadDashboard();
   document.getElementById('search-results').innerHTML='<div class="empty">Type to search jobs</div>';
 });
-</script>
 
-<script>
+
 // ── USERS ─────────────────────────────────────────────────────
 // Roles: owner = full access, manager = full access, viewer = read only
 const USERS = {
@@ -1597,9 +1597,11 @@ function initApp() {
     });
   }
 
-  // Add user badge to nav
+  // Add user badge to nav — only once
   const nav = document.querySelector('.nav');
+  if (nav && !nav.querySelector('.user-badge')) {
   const badge = document.createElement('div');
+  badge.className = 'user-badge';
   badge.style.cssText = 'margin-left:auto;display:flex;align-items:center;gap:10px;padding-right:8px';
   badge.innerHTML = `
     <span style="font-size:11px;color:#CBD5E1">
@@ -1610,6 +1612,7 @@ function initApp() {
       padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer;">Sign out</button>
   `;
   nav.appendChild(badge);
+  } // end badge guard
 
   populateStaffSelects();
 
@@ -1644,6 +1647,7 @@ window.addEventListener('load', () => {
   document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
   checkSession();
 });
+
 </script>
 
 </body>
