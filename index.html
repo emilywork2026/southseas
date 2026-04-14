@@ -620,12 +620,8 @@ function populateStaffSelects() {
 }
 
 // ▼▼▼ PASTE YOUR NEW APPS SCRIPT WEB APP URL HERE ▼▼▼
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw_sn934ipvwxEUuopHTZ2Ngpjq9lTaPqMOZHbHuWf-sOIE9cPD4gdv8kOhynrK3LQyuw/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz1fTacFgTlkt-lSz2yi9qhumUm7tpZR9xGyPZV2J1aKVhSQqCcYBJf_CwucC8An4_Vtg/exec';
 // ▲▲▲ After deploying new Apps Script version, replace the URL above ▲▲▲
-
-// ══ COURTESY CARS ════════════════════════════════
-const CC_PLATES = ['VJ785L','TX235X','NW391N','SB272H','LK854L',
-                   'TN321R','VJ571K','SB252H','XP926R','TX225X','VN281J']; // LK853L sold
 
 // ══ NAVIGATION ═══════════════════════════════════
 function showPage(id) {
@@ -1586,9 +1582,9 @@ function doLogout() {
 }
 
 function initApp() {
-  // Show nav and content
+  // Show nav and all pages
   document.querySelector('.nav').style.display = '';
-  document.querySelector('.content').style.display = '';
+  document.querySelectorAll('.page').forEach(p => p.style.display = '');
 
   // Apply role restrictions
   if (currentUser.role === 'viewer') {
@@ -1643,9 +1639,9 @@ function checkPermission(action) {
 
 // On page load — check session or show login
 window.addEventListener('load', () => {
-  // Hide nav and content until logged in
+  // Hide nav and all pages until logged in
   document.querySelector('.nav').style.display = 'none';
-  document.querySelector('.content').style.display = 'none';
+  document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
   checkSession();
 });
 </script>
