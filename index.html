@@ -477,6 +477,14 @@ textarea{resize:vertical;min-height:72px;}
       </div>
     </div>
     <div class="form-row">
+      <div class="form-group"><label class="form-label">Courtesy car</label>
+        <select id="m-cc"><option value="">None / No change</option><option value="N">N — No CC needed</option><option value="Y">Y — CC requested</option><option>VJ785L</option><option>TX235X</option><option>NW391N</option><option>SB272H</option><option>LK854L</option><option>TN321R</option><option>VJ571K</option><option>SB252H</option><option>XP926R</option><option>TX225X</option><option>VN281J</option><option>Car Rental</option><option value="returned">— Returned (clear CC)</option></select>
+      </div>
+      <div class="form-group" style="display:flex;align-items:flex-end">
+        <div style="font-size:11px;color:var(--muted);padding-bottom:6px;line-height:1.5">Select a plate to assign.<br>Select "Returned" to clear.</div>
+      </div>
+    </div>
+    <div class="form-row">
       <div class="form-group"><label class="form-label">Body tech</label><select id="m-body" class="staff-select"><option value="">—</option></select></div>
       <div class="form-group"><label class="form-label">Paint tech</label><select id="m-paint" class="staff-select"><option value="">—</option></select></div>
     </div>
@@ -1107,6 +1115,7 @@ function openUpdate(job) {
      <span style="font-size:12px;color:var(--muted)">WO: ${esc(job.wo)} · ${esc(job.claim)}</span>`;
   document.getElementById('m-status').value  =job.status||'';
   togglePartsReturn(job.status||'');
+  document.getElementById('m-cc').value      =job.cc||'';
   document.getElementById('m-body').value    =job.bodyTech||'';
   document.getElementById('m-paint').value   =job.paintTech||'';
   document.getElementById('m-b').value       =job.b||'';
@@ -1219,6 +1228,7 @@ async function saveUpdate() {
   if(!checkPermission()) return;
   if(!currentJob) return;
   const partsReturn = document.getElementById('m-parts-return').checked;
+  const rawCC = document.getElementById('m-cc').value;
   const payload={
     rowIndex:currentJob.rowIndex, source:currentJob.source,
     status:   document.getElementById('m-status').value,
@@ -1226,6 +1236,7 @@ async function saveUpdate() {
     notes:    document.getElementById('m-notes').value,
     bodyTech: document.getElementById('m-body').value,
     paintTech:document.getElementById('m-paint').value,
+    cc:       rawCC === 'returned' ? '' : rawCC,
     b:        document.getElementById('m-b').value,
     p:        document.getElementById('m-p').value,
     payment:  document.getElementById('m-payment').value,
