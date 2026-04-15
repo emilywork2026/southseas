@@ -630,7 +630,7 @@ function populateStaffSelects() {
 }
 
 // ▼▼▼ PASTE YOUR NEW APPS SCRIPT WEB APP URL HERE ▼▼▼
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzz4P5ZJehu5QAiev4h-mABy5JTJN5_G9H6Fh0zoteyqubK3cnDXiBTCoUJ4bEHa9pEEQ/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz1fTacFgTlkt-lSz2yi9qhumUm7tpZR9xGyPZV2J1aKVhSQqCcYBJf_CwucC8An4_Vtg/exec';
 // ▲▲▲ After deploying new Apps Script version, replace the URL above ▲▲▲
 
 // ══ NAVIGATION ═══════════════════════════════════
@@ -675,6 +675,7 @@ async function api(action, body={}) {
 
 // ══ DASHBOARD ════════════════════════════════════
 async function loadDashboard() {
+  invalidateSearchCache(); // ensure next search fetch is fresh
   document.getElementById('dash-asof').textContent='Loading…';
   // Show loading state on all stat elements
   document.querySelectorAll('.stat-val').forEach(el=>el.textContent='…');
@@ -853,7 +854,7 @@ function onSearchInput() { clearTimeout(searchTimer); searchTimer=setTimeout(doS
 // ── SEARCH CACHE — load all jobs once, filter locally ────────
 let searchCache = null;
 let searchCacheTime = 0;
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const CACHE_TTL = 60 * 1000; // 60 seconds — reflects sheet changes faster
 
 async function getSearchCache() {
   const now = Date.now();
@@ -991,8 +992,8 @@ function jobCard(j) {
       </div>
       <div class="job-right">
         <span class="spill ${sp.cls}">${sp.label}</span>
-        ${j.inDate?`<span style="font-size:11px;color:var(--muted)">IN: ${esc(j.inDate)}</span>`:''}
-        ${j.outDate?`<span style="font-size:11px;color:var(--green)">OUT: ${esc(j.outDate)}</span>`:''}
+        ${j.inDate?`<span style="font-size:11px;color:var(--muted)">IN: ${fmtDate(j.inDate)}</span>`:''}
+        ${j.outDate?`<span style="font-size:11px;color:var(--green)">OUT: ${fmtDate(j.outDate)}</span>`:''}
         ${hrs?`<span style="font-size:11px;color:var(--muted)">${hrs}</span>`:''}
       </div>
     </div>
@@ -1236,7 +1237,7 @@ async function saveUpdate() {
     notes:    document.getElementById('m-notes').value,
     bodyTech: document.getElementById('m-body').value,
     paintTech:document.getElementById('m-paint').value,
-    cc:       rawCC === 'returned' ? '' : rawCC,
+    cc:       rawCC,  // keep 'returned' sentinel so script can clear the cell
     b:        document.getElementById('m-b').value,
     p:        document.getElementById('m-p').value,
     payment:  document.getElementById('m-payment').value,
@@ -1244,15 +1245,21 @@ async function saveUpdate() {
     partsReturn: partsReturn,
     partsReturnReason: partsReturn ? document.getElementById('m-parts-reason').value.trim() : '',
   };
-  // Update local job object with new email so Notify modal gets it
-  if(payload.email) currentJob.email = payload.email;
+  // Update local job cache so next modal open shows fresh values
+  if(payload.email)    currentJob.email    = payload.email;
+  if(payload.bodyTech) currentJob.bodyTech = payload.bodyTech;
+  if(payload.paintTech)currentJob.paintTech= payload.paintTech;
+  if(payload.cc && payload.cc !== 'returned') currentJob.cc = payload.cc;
+  if(payload.cc === 'returned') currentJob.cc = '';
+  if(payload.status)   currentJob.status   = payload.status;
+  if(payload.payment)  currentJob.payment  = payload.payment;
   const res=await api('updateStatus',payload);
   if(res.ok){ 
     invalidateSearchCache();
-    toast('Job updated successfully'+(partsReturn?' + Parts Return logged':'')); 
+    toast('✅ Job updated'+(partsReturn?' + Parts Return logged':'')); 
     closeModal(); doSearch(); 
   }
-  else toast('Error: '+(res.error||'Unknown error'));
+  else toast('❌ Error: '+(res.error||'Unknown error'));
 }
 
 // ══ NOTIFY MODAL ═════════════════════════════════
@@ -1532,6 +1539,26 @@ async function sendWeeklyReport() {
 
 // ══ UTILITIES ════════════════════════════════════
 function esc(str){return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+// Format date for display — strips long timezone strings from old cached dates
+function fmtDate(s) {
+  if (!s) return '';
+  // Already DD-Mon-YYYY format
+  if (/^\d{1,2}-[A-Za-z]{3}-\d{4}/.test(s)) return s;
+  // ISO date YYYY-MM-DD
+  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) {
+    const M=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return String(parseInt(iso[3])).padStart(2,'0')+'-'+M[parseInt(iso[2])-1]+'-'+iso[1];
+  }
+  // Long JS date string like "Mon Apr 13 2026 00:00:00 GMT-0700..."
+  const d = new Date(s);
+  if (!isNaN(d)) {
+    const M=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return String(d.getDate()).padStart(2,'0')+'-'+M[d.getMonth()]+'-'+d.getFullYear();
+  }
+  return s;
+}
 let toastTimer=null;
 function toast(msg){
   const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
