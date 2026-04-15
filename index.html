@@ -1077,7 +1077,7 @@ async function loadCars() {
         <div class="cc-status" style="color:var(--red)">IN USE</div>
         <div class="cc-customer">${esc(job.name)}</div>
         <div class="cc-customer" style="font-size:10px;color:#666">${esc(job.vehicle)}</div>
-        <div class="cc-since">IN: ${esc(job.inDate||'—')} · WO: ${esc(job.wo)}</div>
+        <div class="cc-since">IN: ${fmtDate(job.inDate)||'—'} · WO: ${esc(job.wo)}</div>
       </div>`;
     } else {
       const last = ccInUse[plate];
@@ -1450,7 +1450,7 @@ function renderUpcoming() {
         <div style="font-size:11px;color:var(--muted);font-family:monospace">WO: ${esc(j.wo)}</div>
       </div>
       <div style="text-align:right;flex-shrink:0">
-        <div style="font-size:13px;font-weight:600;color:var(--navy)">${esc(j.inDate||j.schedDate)}</div>
+        <div style="font-size:13px;font-weight:600;color:var(--navy)">${fmtDate(j.inDate||j.schedDate)}</div>
         <span class="spill ${sp.cls}" style="margin-top:4px;display:inline-block">${sp.label}</span>
         ${j.cc?`<div style="font-size:11px;color:var(--muted);margin-top:2px">CC: ${esc(j.cc)}</div>`:''}
       </div>
