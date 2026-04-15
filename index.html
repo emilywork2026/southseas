@@ -337,7 +337,16 @@ textarea{resize:vertical;min-height:72px;}
 
 <!-- ═══ SEARCH ═══ -->
 <div class="page" id="page-search">
-  <div class="sec-hd"><div class="sec-title">Job search</div></div>
+  <div class="sec-hd">
+    <div>
+      <div class="sec-title">Job search</div>
+      <div id="search-asof" style="font-size:11px;color:var(--muted);margin-top:2px">Not loaded yet — type to search</div>
+    </div>
+    <button class="btn btn-sm" onclick="refreshSearch()">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4v5h5M20 20v-5h-5"/><path d="M4.07 15a9 9 0 1 0 .29-4.88" stroke-linecap="round"/></svg>
+      Refresh
+    </button>
+  </div>
   <div class="search-wrap">
     <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35" stroke-linecap="round"/></svg>
     <input type="search" id="search-input" placeholder="Name, WO#, claim#, plate, vehicle, contact…" autocomplete="off" oninput="onSearchInput()">
@@ -478,10 +487,10 @@ textarea{resize:vertical;min-height:72px;}
     </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Courtesy car</label>
-        <select id="m-cc"><option value="">None / No change</option><option value="N">N — No CC needed</option><option value="Y">Y — CC requested</option><option>VJ785L</option><option>TX235X</option><option>NW391N</option><option>SB272H</option><option>LK854L</option><option>TN321R</option><option>VJ571K</option><option>SB252H</option><option>XP926R</option><option>TX225X</option><option>VN281J</option><option>Car Rental</option><option value="returned">— Returned (clear CC)</option></select>
+        <select id="m-cc"><option value="">— No change —</option><option value="N">N — No CC needed</option><option value="Y">Y — CC requested</option><option>VJ785L</option><option>TX235X</option><option>NW391N</option><option>SB272H</option><option>LK854L</option><option>TN321R</option><option>VJ571K</option><option>SB252H</option><option>XP926R</option><option>TX225X</option><option>VN281J</option><option>Car Rental</option><option value="returned">— Returned (clear CC)</option></select>
       </div>
-      <div class="form-group" style="display:flex;align-items:flex-end">
-        <div style="font-size:11px;color:var(--muted);padding-bottom:6px;line-height:1.5">Select a plate to assign.<br>Select "Returned" to clear.</div>
+      <div class="form-group" style="display:flex;align-items:flex-end;padding-bottom:2px">
+        <span style="font-size:11px;color:var(--muted);line-height:1.5">Assign plate or select<br>"Returned" to clear</span>
       </div>
     </div>
     <div class="form-row">
@@ -640,7 +649,7 @@ function showPage(id) {
   document.getElementById('page-'+id).classList.add('active');
   document.getElementById('nb-'+id).classList.add('active');
   if(id==='dashboard') loadDashboard();
-  if(id==='search') { getSearchCache(); } // pre-warm cache silently
+  if(id==='search') { getSearchCache(true); } // always fetch fresh on tab switch
   if(id==='search')    initSearch();
   if(id==='schedule')  loadSchedule();
   if(id==='techs')     loadTechHours();
@@ -675,7 +684,7 @@ async function api(action, body={}) {
 
 // ══ DASHBOARD ════════════════════════════════════
 async function loadDashboard() {
-  invalidateSearchCache(); // ensure next search fetch is fresh
+  invalidateSearchCache();
   document.getElementById('dash-asof').textContent='Loading…';
   // Show loading state on all stat elements
   document.querySelectorAll('.stat-val').forEach(el=>el.textContent='…');
@@ -851,29 +860,37 @@ function setFilter(id,el) {
 
 function onSearchInput() { clearTimeout(searchTimer); searchTimer=setTimeout(doSearch,180); }
 
-// ── SEARCH CACHE — load all jobs once, filter locally ────────
+// ── SEARCH CACHE — always fetch live from sheet ──────────────
 let searchCache = null;
 let searchCacheTime = 0;
-const CACHE_TTL = 60 * 1000; // 60 seconds — reflects sheet changes faster
 
-async function getSearchCache() {
-  const now = Date.now();
-  if (searchCache && (now - searchCacheTime) < CACHE_TTL) return searchCache;
-  // Load all jobs from API
-  const data = await api('search', {query:'', filter:'all'});
+async function getSearchCache(force) {
+  if (!force && searchCache) return searchCache;
+  const el = document.getElementById('search-asof');
+  if (el) el.textContent = 'Loading from sheet…';
+  const data = await api('search');
   if (data.ok && data.jobs) {
     searchCache = data.jobs;
-    searchCacheTime = now;
-    // Build search index — lowercase string per job for fast matching
+    searchCacheTime = Date.now();
     searchCache.forEach(j => {
-      j._idx = [j.name,j.wo,j.claim,j.vehicle,j.plate,j.contact,j.notes,j.status]
+      j._idx = [j.name,j.wo,j.claim,j.vehicle,j.plate,j.contact,j.notes,j.status,j.bodyTech,j.paintTech,j.cc]
         .join(' ').toLowerCase();
     });
+    if (el) el.textContent = data.jobs.length + ' jobs · as of ' + new Date().toLocaleTimeString();
+  } else {
+    if (el) el.textContent = 'Error loading — check connection';
   }
   return searchCache;
 }
 
-function invalidateSearchCache() { searchCache = null; }
+function invalidateSearchCache() { searchCache = null; searchCacheTime = 0; }
+
+async function refreshSearch() {
+  invalidateSearchCache();
+  await getSearchCache(true);
+  doSearch();
+  toast('Search refreshed from sheet');
+}
 
 function jobMatchesQuery(j, q, filter) {
   if (q && !j._idx.includes(q.toLowerCase())) return false;
@@ -1237,7 +1254,7 @@ async function saveUpdate() {
     notes:    document.getElementById('m-notes').value,
     bodyTech: document.getElementById('m-body').value,
     paintTech:document.getElementById('m-paint').value,
-    cc:       rawCC,  // keep 'returned' sentinel so script can clear the cell
+    cc:       rawCC, // 'returned' sentinel tells script to clear the cell
     b:        document.getElementById('m-b').value,
     p:        document.getElementById('m-p').value,
     payment:  document.getElementById('m-payment').value,
@@ -1245,19 +1262,21 @@ async function saveUpdate() {
     partsReturn: partsReturn,
     partsReturnReason: partsReturn ? document.getElementById('m-parts-reason').value.trim() : '',
   };
-  // Update local job cache so next modal open shows fresh values
-  if(payload.email)    currentJob.email    = payload.email;
-  if(payload.bodyTech) currentJob.bodyTech = payload.bodyTech;
-  if(payload.paintTech)currentJob.paintTech= payload.paintTech;
-  if(payload.cc && payload.cc !== 'returned') currentJob.cc = payload.cc;
-  if(payload.cc === 'returned') currentJob.cc = '';
-  if(payload.status)   currentJob.status   = payload.status;
-  if(payload.payment)  currentJob.payment  = payload.payment;
+  // Update local job cache
+  if(payload.email)     currentJob.email     = payload.email;
+  if(payload.bodyTech)  currentJob.bodyTech  = payload.bodyTech;
+  if(payload.paintTech) currentJob.paintTech = payload.paintTech;
+  if(payload.status)    currentJob.status    = payload.status;
+  if(payload.payment)   currentJob.payment   = payload.payment;
+  if(rawCC === 'returned') currentJob.cc = '';
+  else if(rawCC) currentJob.cc = rawCC;
   const res=await api('updateStatus',payload);
   if(res.ok){ 
     invalidateSearchCache();
-    toast('✅ Job updated'+(partsReturn?' + Parts Return logged':'')); 
-    closeModal(); doSearch(); 
+    toast('✅ Job updated'+(partsReturn?' + Parts Return logged':''));
+    closeModal();
+    await getSearchCache(true); // force fresh fetch immediately
+    doSearch();
   }
   else toast('❌ Error: '+(res.error||'Unknown error'));
 }
@@ -1540,18 +1559,14 @@ async function sendWeeklyReport() {
 // ══ UTILITIES ════════════════════════════════════
 function esc(str){return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
-// Format date for display — strips long timezone strings from old cached dates
 function fmtDate(s) {
   if (!s) return '';
-  // Already DD-Mon-YYYY format
   if (/^\d{1,2}-[A-Za-z]{3}-\d{4}/.test(s)) return s;
-  // ISO date YYYY-MM-DD
   const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (iso) {
     const M=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     return String(parseInt(iso[3])).padStart(2,'0')+'-'+M[parseInt(iso[2])-1]+'-'+iso[1];
   }
-  // Long JS date string like "Mon Apr 13 2026 00:00:00 GMT-0700..."
   const d = new Date(s);
   if (!isNaN(d)) {
     const M=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
