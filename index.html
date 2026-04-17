@@ -95,6 +95,8 @@ textarea{resize:vertical;min-height:72px;}
 .sp-teal{background:#CFFAFE;color:#0E7490;}
 .sp-grey{background:#F3F4F6;color:#6B7280;}
 .sp-gold{background:#FEF3C7;color:#92400E;}
+.sec-group-hd{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:10px 2px 4px;margin-top:4px;border-top:1px solid var(--border);display:flex;align-items:center;gap:6px;}
+.sec-count{background:var(--border);color:var(--muted);border-radius:99px;padding:1px 7px;font-size:11px;font-weight:600;}
 
 /* BUTTONS */
 .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;}
@@ -425,7 +427,7 @@ textarea{resize:vertical;min-height:72px;}
     </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Job type</label><select id="f-po"><option>ICBC</option><option>Private</option><option>Private Insurance</option><option>Private + ICBC</option><option>Turo</option><option>WorkSafe BC</option></select></div>
-      <div class="form-group"><label class="form-label">Initial status</label><select id="f-status"><option>Estimate/Photo</option><option>Towed IN</option><option>Schedule</option><option>Ordered Parts</option></select></div>
+      <div class="form-group"><label class="form-label">Initial status</label><select id="f-status"><option>Towed IN</option><option>Estimate/Photo</option><option>Estimate Pending Review</option><option>Estimate Approved</option><option>Order Parts</option><option>Ordered Parts</option><option>Parts arrived</option><option>Schedule</option></select></div>
     </div>
     <div class="form-group"><label class="form-label">Customer name</label><input type="text" id="f-name" placeholder="Last, First or Company"></div>
     <div class="form-row">
@@ -477,9 +479,13 @@ textarea{resize:vertical;min-height:72px;}
     <div class="modal-hd"><div class="modal-title">Update job</div><button class="modal-close" onclick="closeModal()">&times;</button></div>
     <div id="modal-job-summary" style="background:var(--bg);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:13px;"></div>
     <div class="form-group"><label class="form-label">Status</label>
-      <select id="m-status" onchange="togglePartsReturn(this.value)"><option value="">—</option><option>Towed IN</option><option>Estimate/Photo</option><option>Estimate Pending Review</option><option>Estimate Approved</option><option>Order Parts</option><option>Ordered Parts</option><option>Parts arrived</option><option>Schedule</option><option>WIP</option><option>In Progress</option><option>Refix</option><option>Outstanding Balance</option><option>Ready for Pickup</option><option>Picked up</option><option>No Show</option><option>Cancelled</option><option>Total Loss</option><option>Shop Change Request</option></select>
+      <select id="m-status" onchange="onStatusChange(this.value)"><option value="">—</option><option>Towed IN</option><option>Estimate/Photo</option><option>Estimate Pending Review</option><option>Estimate Approved</option><option>Order Parts</option><option>Ordered Parts</option><option>Parts arrived</option><option>Schedule</option><option>WIP</option><option>In Progress</option><option>Refix</option><option>Outstanding Balance</option><option>Ready for Pickup</option><option>Picked up</option><option>No Show</option><option>Cancelled</option><option>Total Loss</option><option>Shop Change Request</option></select>
     </div>
     <div class="form-row">
+      <div class="form-group" id="sched-date-row" style="display:none">
+        <label class="form-label">Scheduled IN date <span style="font-size:11px;color:var(--muted);font-weight:400">(required when status is Schedule)</span></label>
+        <input type="date" id="m-sched-date">
+      </div>
       <div class="form-group"><label class="form-label">OUT Date</label><input type="date" id="m-out"></div>
       <div class="form-group"><label class="form-label">Payment</label>
         <select id="m-payment"><option value="">—</option><option>Unpaid</option><option>Paid Cash</option><option>Paid Visa</option><option>Paid Master</option><option>Paid Debit</option><option>Paid Cheque</option><option>E-Transfer</option><option>Outstanding Balance</option><option>Deductible Owing</option></select>
@@ -842,6 +848,7 @@ const FILTERS=[
   {id:'pickedup',label:'Picked up'},{id:'scheduled',label:'Scheduled'},
   {id:'parts',label:'Parts'},{id:'estimate',label:'Estimate'},
   {id:'cancelled',label:'Cancelled'},{id:'private',label:'Private'},{id:'noshow',label:'No Show'},
+  {id:'njl',label:'NJL'},{id:'wip',label:'WIP'},
 ];
 let activeFilter='all', searchTimer=null, currentJob=null;
 
@@ -907,6 +914,8 @@ function jobMatchesQuery(j, q, filter) {
     case 'cancelled': return s.includes('cancel')||s.includes('total loss');
     case 'private':   return (j.wo||'').toLowerCase().includes('private')||(j.po||'').toLowerCase().includes('private');
     case 'noshow':    return s.includes('no show');
+    case 'njl': return ['towed','estimate','photo','order part','ordered part','parts arrived'].some(x=>s.includes(x))&&!['wip','in progress','refix','outstanding','ready','schedule','picked up','cancel','total loss','no show','shop change'].some(x=>s.includes(x));
+    case 'wip': return ['wip','in progress','refix','outstanding balance','ready for pickup'].some(x=>s.includes(x));
     default: return true;
   }
 }
@@ -975,6 +984,38 @@ function jobMatchesDateRange(job) {
   return true;
 }
 
+function statusGroup(status) {
+  const s = (status||'').toLowerCase();
+  if(s.includes('picked up')) return 'closed';
+  if(s.includes('cancel')||s.includes('total loss')||s.includes('no show')||s.includes('shop change')) return 'closed';
+  if(s.includes('ready for pickup')||s.includes('outstanding')) return 'ready';
+  if(s.includes('wip')||s.includes('in progress')||s.includes('refix')) return 'wip';
+  if(s.includes('schedule')) return 'scheduled';
+  return 'njl';
+}
+const STATUS_GROUPS=[
+  {key:'njl',     label:'New Job List'},
+  {key:'scheduled',label:'Scheduled'},
+  {key:'wip',     label:'Work In Progress'},
+  {key:'ready',   label:'Outstanding / Ready for Pickup'},
+  {key:'closed',  label:'Closed / Archive'},
+];
+function renderJobSections(jobs) {
+  const grouped={};
+  jobs.forEach(j=>{ const k=statusGroup(j.status); (grouped[k]=grouped[k]||[]).push(j); });
+  let html='';
+  STATUS_GROUPS.forEach(g=>{
+    const grp=grouped[g.key];
+    if(!grp||!grp.length) return;
+    html+=`<div class="sec-group-hd">${g.label} <span class="sec-count">${grp.length}</span></div>`;
+    html+=grp.map(j=>jobCard(j)).join('');
+  });
+  if(grouped.other&&grouped.other.length){
+    html+=`<div class="sec-group-hd">Other <span class="sec-count">${grouped.other.length}</span></div>`;
+    html+=grouped.other.map(j=>jobCard(j)).join('');
+  }
+  return html||'<div class="empty">No jobs found</div>';
+}
 async function doSearch() {
   const q=document.getElementById('search-input').value.trim();
   const el=document.getElementById('search-results');
@@ -994,7 +1035,7 @@ async function doSearch() {
   document.getElementById('search-meta').textContent=
     jobs.length?`${jobs.length} job${jobs.length!==1?'s':''} found`:'';
   if(!jobs.length){el.innerHTML='<div class="empty">No jobs found</div>';return;}
-  el.innerHTML=jobs.slice(0,150).map(j=>jobCard(j)).join('');
+  el.innerHTML=renderJobSections(jobs.slice(0,150));
 }
 
 function jobCard(j) {
@@ -1119,6 +1160,8 @@ function statusPill(status) {
   if(s.includes('estimate')||s.includes('photo')) return{cls:'sp-purple',label:'Estimate'};
   if(s.includes('towed'))      return{cls:'sp-grey',label:'Towed in'};
   if(s.includes('outstanding'))return{cls:'sp-red',label:'Outstanding'};
+  if(s.includes('wip')||s.includes('in progress')||s.includes('refix'))return{cls:'sp-gold',label:status};
+  if(s.includes('ready for pickup'))return{cls:'sp-teal',label:'Ready for pickup'};
   return{cls:'sp-grey',label:status||'—'};
 }
 
@@ -1132,7 +1175,8 @@ function openUpdate(job) {
     `<strong>${esc(job.name)}</strong> · ${esc(job.vehicle)} · ${esc(job.plate||'')}<br>
      <span style="font-size:12px;color:var(--muted)">WO: ${esc(job.wo)} · ${esc(job.claim)}</span>`;
   document.getElementById('m-status').value  =job.status||'';
-  togglePartsReturn(job.status||'');
+  document.getElementById('m-sched-date').value='';
+  onStatusChange(job.status||'');
   document.getElementById('m-cc').value      =job.cc||'';
   document.getElementById('m-body').value    =job.bodyTech||'';
   document.getElementById('m-paint').value   =job.paintTech||'';
@@ -1224,19 +1268,22 @@ async function saveScheduleConfirm() {
   doSearch();
 }
 
-function togglePartsReturn(status) {
+function onStatusChange(status) {
   const sl = (status||'').toLowerCase();
-  const show = sl.includes('cancel') || sl.includes('total loss') ||
-               sl.includes('shop change') || sl.includes('no show');
-  const section = document.getElementById('parts-return-section');
-  if (section) {
-    section.style.display = show ? 'block' : 'none';
-    if (!show) {
+  const showParts = sl.includes('cancel') || sl.includes('total loss') ||
+                    sl.includes('shop change') || sl.includes('no show');
+  const partsSection = document.getElementById('parts-return-section');
+  if (partsSection) {
+    partsSection.style.display = showParts ? 'block' : 'none';
+    if (!showParts) {
       document.getElementById('m-parts-return').checked = false;
       document.getElementById('m-parts-reason').value = '';
     }
   }
+  const schedRow = document.getElementById('sched-date-row');
+  if (schedRow) schedRow.style.display = (sl === 'schedule') ? 'block' : 'none';
 }
+function togglePartsReturn(status) { onStatusChange(status); } // legacy alias
 
 function openNotifyFromUpdate() {
   if(currentJob) { const j=currentJob; closeModal(); openNotify(j); }
@@ -1250,7 +1297,7 @@ async function saveUpdate() {
   const payload={
     rowIndex:currentJob.rowIndex, source:currentJob.source,
     status:   document.getElementById('m-status').value,
-    outDate:  document.getElementById('m-out').value,
+    outDate:  (document.getElementById('m-status').value==='Schedule'&&document.getElementById('m-sched-date').value) ? document.getElementById('m-sched-date').value : document.getElementById('m-out').value,
     notes:    document.getElementById('m-notes').value,
     bodyTech: document.getElementById('m-body').value,
     paintTech:document.getElementById('m-paint').value,
