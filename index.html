@@ -984,38 +984,9 @@ function jobMatchesDateRange(job) {
   return true;
 }
 
-function statusGroup(status) {
-  const s = (status||'').toLowerCase();
-  if(s.includes('picked up')) return 'closed';
-  if(s.includes('cancel')||s.includes('total loss')||s.includes('no show')||s.includes('shop change')) return 'closed';
-  if(s.includes('ready for pickup')||s.includes('outstanding')) return 'ready';
-  if(s.includes('wip')||s.includes('in progress')||s.includes('refix')) return 'wip';
-  if(s.includes('schedule')) return 'scheduled';
-  return 'njl';
-}
-const STATUS_GROUPS=[
-  {key:'njl',     label:'New Job List'},
-  {key:'scheduled',label:'Scheduled'},
-  {key:'wip',     label:'Work In Progress'},
-  {key:'ready',   label:'Outstanding / Ready for Pickup'},
-  {key:'closed',  label:'Closed / Archive'},
-];
-function renderJobSections(jobs) {
-  const grouped={};
-  jobs.forEach(j=>{ const k=statusGroup(j.status); (grouped[k]=grouped[k]||[]).push(j); });
-  let html='';
-  STATUS_GROUPS.forEach(g=>{
-    const grp=grouped[g.key];
-    if(!grp||!grp.length) return;
-    html+=`<div class="sec-group-hd">${g.label} <span class="sec-count">${grp.length}</span></div>`;
-    html+=grp.map(j=>jobCard(j)).join('');
-  });
-  if(grouped.other&&grouped.other.length){
-    html+=`<div class="sec-group-hd">Other <span class="sec-count">${grouped.other.length}</span></div>`;
-    html+=grouped.other.map(j=>jobCard(j)).join('');
-  }
-  return html||'<div class="empty">No jobs found</div>';
-}
+function statusGroup(status){const s=(status||'').toLowerCase();if(s.includes('picked up'))return'closed';if(s.includes('cancel')||s.includes('total loss')||s.includes('no show')||s.includes('shop change'))return'closed';if(s.includes('ready for pickup')||s.includes('outstanding'))return'ready';if(s.includes('wip')||s.includes('in progress')||s.includes('refix'))return'wip';if(s.includes('schedule'))return'scheduled';return'njl';}
+const STATUS_GROUPS=[{key:'njl',label:'New Job List'},{key:'scheduled',label:'Scheduled'},{key:'wip',label:'Work In Progress'},{key:'ready',label:'Outstanding / Ready for Pickup'},{key:'closed',label:'Closed / Archive'}];
+function renderJobSections(jobs){const grouped={};jobs.forEach(j=>{const k=statusGroup(j.status);(grouped[k]=grouped[k]||[]).push(j);});let html='';STATUS_GROUPS.forEach(g=>{const grp=grouped[g.key];if(!grp||!grp.length)return;html+=`<div class="sec-group-hd">${g.label} <span class="sec-count">${grp.length}</span></div>`;html+=grp.map(j=>jobCard(j)).join('');});if(grouped.other&&grouped.other.length){html+=`<div class="sec-group-hd">Other <span class="sec-count">${grouped.other.length}</span></div>`;html+=grouped.other.map(j=>jobCard(j)).join('');}return html||'<div class="empty">No jobs found</div>';}
 async function doSearch() {
   const q=document.getElementById('search-input').value.trim();
   const el=document.getElementById('search-results');
@@ -1268,22 +1239,8 @@ async function saveScheduleConfirm() {
   doSearch();
 }
 
-function onStatusChange(status) {
-  const sl = (status||'').toLowerCase();
-  const showParts = sl.includes('cancel') || sl.includes('total loss') ||
-                    sl.includes('shop change') || sl.includes('no show');
-  const partsSection = document.getElementById('parts-return-section');
-  if (partsSection) {
-    partsSection.style.display = showParts ? 'block' : 'none';
-    if (!showParts) {
-      document.getElementById('m-parts-return').checked = false;
-      document.getElementById('m-parts-reason').value = '';
-    }
-  }
-  const schedRow = document.getElementById('sched-date-row');
-  if (schedRow) schedRow.style.display = (sl === 'schedule') ? 'block' : 'none';
-}
-function togglePartsReturn(status) { onStatusChange(status); } // legacy alias
+function onStatusChange(status){const sl=(status||'').toLowerCase();const showParts=sl.includes('cancel')||sl.includes('total loss')||sl.includes('shop change')||sl.includes('no show');const partsSection=document.getElementById('parts-return-section');if(partsSection){partsSection.style.display=showParts?'block':'none';if(!showParts){document.getElementById('m-parts-return').checked=false;document.getElementById('m-parts-reason').value='';}}const schedRow=document.getElementById('sched-date-row');if(schedRow)schedRow.style.display=(sl==='schedule')?'block':'none';}
+function togglePartsReturn(status){onStatusChange(status);}
 
 function openNotifyFromUpdate() {
   if(currentJob) { const j=currentJob; closeModal(); openNotify(j); }
@@ -1297,7 +1254,7 @@ async function saveUpdate() {
   const payload={
     rowIndex:currentJob.rowIndex, source:currentJob.source,
     status:   document.getElementById('m-status').value,
-    outDate:  (document.getElementById('m-status').value==='Schedule'&&document.getElementById('m-sched-date').value) ? document.getElementById('m-sched-date').value : document.getElementById('m-out').value,
+    outDate:  (document.getElementById('m-status').value==='Schedule'&&document.getElementById('m-sched-date').value)?document.getElementById('m-sched-date').value:document.getElementById('m-out').value,
     notes:    document.getElementById('m-notes').value,
     bodyTech: document.getElementById('m-body').value,
     paintTech:document.getElementById('m-paint').value,
