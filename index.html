@@ -286,7 +286,7 @@ textarea{resize:vertical;min-height:72px;}
 <div class="page active" id="page-dashboard">
   <div class="sec-hd">
     <div><div class="sec-title">Dashboard</div><div class="sec-sub" id="dash-asof">Loading…</div></div>
-    <button class="btn btn-sm" onclick="loadDashboard()">
+    <button class="btn btn-sm" onclick="loadDashboard(true)">
       <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4v5h5M20 20v-5h-5"/><path d="M4.07 15a9 9 0 1 0 .29-4.88" stroke-linecap="round"/></svg>
       Refresh
     </button>
@@ -438,7 +438,7 @@ textarea{resize:vertical;min-height:72px;}
     <div class="form-row">
       <div class="form-group"><label class="form-label">Plate #</label><input type="text" id="f-plate" placeholder="AB123C"></div>
       <div class="form-group"><label class="form-label">Courtesy car</label>
-        <select id="f-cc"><option value="">None</option><option>Y</option><option>N</option><option>VJ785L</option><option>TX235X</option><option>SB272H</option><option>LK853L</option><option>TN321R</option><option>VJ571K</option><option>SB252H</option><option>XP925R</option><option>XP926R</option><option>TX225X</option><option>Car Rental</option></select>
+        <select id="f-cc"><option value="">None</option><option>Y</option><option>N</option><option>VJ785L</option><option>TX235X</option><option>NW391N</option><option>SB272H</option><option>LK854L</option><option>TN321R</option><option>VJ571K</option><option>SB252H</option><option>XP926R</option><option>TX225X</option><option>VN281J</option><option>Car Rental</option></select>
       </div>
     </div>
     <div class="form-row">
@@ -493,7 +493,7 @@ textarea{resize:vertical;min-height:72px;}
     </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Courtesy car</label>
-        <select id="m-cc"><option value="">— No change —</option><option value="N">N — No CC needed</option><option value="Y">Y — CC requested</option><option>VJ785L</option><option>TX235X</option><option>SB272H</option><option>LK853L</option><option>TN321R</option><option>VJ571K</option><option>SB252H</option><option>XP925R</option><option>XP926R</option><option>TX225X</option><option>VN281J</option><option>Car Rental</option><option value="returned">— Returned (clear CC)</option></select>
+        <select id="m-cc"><option value="">— No change —</option><option value="N">N — No CC needed</option><option value="Y">Y — CC requested</option><option>VJ785L</option><option>TX235X</option><option>SB272H</option><option>LK854L</option><option>TN321R</option><option>VJ571K</option><option>SB252H</option><option>XP926R</option><option>TX225X</option><option>VN281J</option><option>Car Rental</option><option value="returned">— Returned (clear CC)</option></select>
       </div>
       <div class="form-group" style="display:flex;align-items:flex-end;padding-bottom:2px">
         <span style="font-size:11px;color:var(--muted);line-height:1.5">Assign plate or select<br>"Returned" to clear</span>
@@ -630,7 +630,7 @@ textarea{resize:vertical;min-height:72px;}
 <script>
 // ── CONSTANTS ─────────────────────────────────────────────────
 const STAFF = ['Aashi','Nelson','RC','David','Johnny','John','Ammar Ali','Marco','Katty','Ami'];
-const CC_PLATES = ['VJ785L','TX235X','SB272H','LK853L','TN321R','VJ571K','SB252H','XP925R','XP926R','TX225X','VN281J'];
+const CC_PLATES = ['VJ785L','TX235X','NW391N','SB272H','LK854L','TN321R','VJ571K','SB252H','XP926R','TX225X','VN281J'];
 
 // Build staff options HTML once
 const STAFF_OPTS = '<option value="">—</option>'+STAFF.map(s=>`<option>${s}</option>`).join('');
@@ -645,7 +645,7 @@ function populateStaffSelects() {
 }
 
 // ▼▼▼ PASTE YOUR NEW APPS SCRIPT WEB APP URL HERE ▼▼▼
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxMAzoPrYZKg2jNc1wCftPoFigBBg5W-qtVu43xbRAtGHmSrFpZ46LdQiTr6RIzRebPEA/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxCdsZrqcmd6ZtFMAShjkD-oPlBRx2GDdi5hjLn4cbCgpfu2okQshuSDkysdFZDKXHvwA/exec';
 // ▲▲▲ After deploying new Apps Script version, replace the URL above ▲▲▲
 
 // ══ NAVIGATION ═══════════════════════════════════
@@ -663,12 +663,24 @@ function showPage(id) {
 }
 
 // ══ API ═══════════════════════════════════════════
+// Read-only actions use GET; write actions use POST with JSON body
+// (keeps sensitive data out of URL / browser history / server logs)
+const POST_ACTIONS = new Set(['updateStatus','newIntake','notifyCustomer','login','sendWeeklyReport']);
+
 async function api(action, body={}) {
   try {
-    const params = new URLSearchParams({action});
-    Object.entries(body).forEach(([k,v])=>{ if(v!==undefined&&v!==null) params.set(k,String(v)); });
-    const url = SCRIPT_URL+'?'+params.toString();
-    const res  = await fetch(url, {method:'GET', redirect:'follow'});
+    let res;
+    if (POST_ACTIONS.has(action)) {
+      res = await fetch(SCRIPT_URL, {
+        method: 'POST', redirect: 'follow',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, ...body }),
+      });
+    } else {
+      const params = new URLSearchParams({action});
+      Object.entries(body).forEach(([k,v])=>{ if(v!==undefined&&v!==null) params.set(k,String(v)); });
+      res = await fetch(SCRIPT_URL+'?'+params.toString(), { method:'GET', redirect:'follow' });
+    }
     if (!res.ok) {
       console.error('HTTP error', res.status, 'for action:', action);
       return {ok:false, error:'HTTP '+res.status};
@@ -689,7 +701,17 @@ async function api(action, body={}) {
 }
 
 // ══ DASHBOARD ════════════════════════════════════
-async function loadDashboard() {
+let _dashCache = null, _dashCacheTime = 0;
+const DASH_TTL = 60000; // 60 seconds — avoid full reload on every tab switch
+
+async function loadDashboard(force) {
+  const age = Date.now() - _dashCacheTime;
+  if (!force && _dashCache && age < DASH_TTL) {
+    // Use cached data — just update the stale label
+    document.getElementById('dash-asof').textContent =
+      'As of '+new Date(_dashCache.dash.asOf).toLocaleTimeString()+' ✓ cached';
+    return;
+  }
   invalidateSearchCache();
   document.getElementById('dash-asof').textContent='Loading…';
   // Show loading state on all stat elements
@@ -705,6 +727,10 @@ async function loadDashboard() {
     return;
   }
 
+  if (dashData?.ok && schedData) {
+    _dashCache = { dash: dashData, sched: schedData };
+    _dashCacheTime = Date.now();
+  }
   if (!dashData || !dashData.ok || !dashData.counts) {
     const errMsg = dashData?.error || 'No data returned — check SCRIPT_URL in index.html and redeploy Apps Script';
     document.getElementById('dash-asof').textContent = '⚠️ '+errMsg;
@@ -914,7 +940,7 @@ function jobMatchesQuery(j, q, filter) {
     case 'cancelled': return s.includes('cancel')||s.includes('total loss');
     case 'private':   return (j.wo||'').toLowerCase().includes('private')||(j.po||'').toLowerCase().includes('private');
     case 'noshow':    return s.includes('no show');
-    case 'njl': return ['towed','estimate','photo','order part','ordered part','parts arrived'].some(x=>s.includes(x))&&!['wip','in progress','refix','outstanding','ready','schedule','picked up','cancel','total loss','no show','shop change'].some(x=>s.includes(x));
+    case 'njl': return ['towed','estimate','photo','new intake','1 –','2 –','3 –','4 –','5 –','order part','ordered part','parts arrived'].some(x=>s.includes(x))&&!['wip','in progress','refix','outstanding','ready','schedule','picked up','cancel','total loss','no show','shop change'].some(x=>s.includes(x));
     case 'wip': return ['wip','in progress','refix','outstanding balance','ready for pickup'].some(x=>s.includes(x));
     default: return true;
   }
@@ -1205,7 +1231,8 @@ async function saveScheduleConfirm() {
     rowIndex:  schedJob.rowIndex,
     source:    schedJob.source,
     status:    'Schedule',
-    outDate:   date,
+    schedDate: date,   // writes NJL.SCHED column
+    outDate:   date,   // sets WIP OUT date
     bodyTech:  bodyTech,
     paintTech: paintTech,
     notes:     note ? `Scheduled ${date}${note ? ' — '+note : ''}` : `Confirmed schedule: ${date}`,
@@ -1291,7 +1318,7 @@ let notifyJob=null, notifyTab='email';
 // Job store — avoids JSON-in-onclick quote conflicts
 const jobStore = {};
 function storeJob(j) {
-  const key = 'j_'+(j.rowIndex||Math.random().toString(36).slice(2));
+  const key = 'j_'+(j.source||'x')+'_'+(j.rowIndex||Math.random().toString(36).slice(2));
   jobStore[key] = j;
   return key;
 }
@@ -1417,8 +1444,8 @@ function renderCalendar() {
   document.getElementById('cal-month').textContent=first.toLocaleString('default',{month:'long',year:'numeric'});
   const jobsByDay={};
   schedJobs.forEach(j=>{
-    const d=new Date(j.inDate||j.schedDate||'');
-    if(!isNaN(d)){const k=`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+    const d=parseJobDate(j.outDate||j.inDate||j.schedDate||'');
+    if(d&&!isNaN(d)){const k=`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
       if(!jobsByDay[k])jobsByDay[k]=[];jobsByDay[k].push(j);}
   });
   let html='';
@@ -1441,8 +1468,8 @@ function renderCalendar() {
 function renderUpcoming() {
   const now=new Date(), list=document.getElementById('upcoming-list');
   const upcoming=schedJobs
-    .filter(j=>{const d=new Date(j.inDate||j.schedDate||'');return !isNaN(d)&&d>=now;})
-    .sort((a,b)=>new Date(a.inDate||a.schedDate)-new Date(b.inDate||b.schedDate))
+    .filter(j=>{const d=parseJobDate(j.outDate||j.inDate||j.schedDate||'');return d&&!isNaN(d)&&d>=now;})
+    .sort((a,b)=>(parseJobDate(a.outDate||a.inDate||a.schedDate)||0)-(parseJobDate(b.outDate||b.inDate||b.schedDate)||0))
     .slice(0,15);
   if(!upcoming.length){list.innerHTML='<div class="empty">No upcoming bookings</div>';return;}
   list.innerHTML=upcoming.map(j=>{
@@ -1584,38 +1611,34 @@ function toast(msg){
   clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),3500);
 }
 
-// Init
-document.addEventListener('DOMContentLoaded',()=>{
-  loadDashboard();
-  document.getElementById('search-results').innerHTML='<div class="empty">Type to search jobs</div>';
-});
+// App boots via initApp() after login — no API calls before authentication.
 
 
-// ── USERS ─────────────────────────────────────────────────────
-// Roles: owner = full access, manager = full access, viewer = read only
-const USERS = {
-  'emily': { password: 'Joes@0302', role: 'owner',   name: 'Emily'  },
-  'john':  { password: 'John@2026', role: 'manager',  name: 'John'   },
-  'view':  { password: 'View@2026', role: 'viewer',   name: 'Viewer' },
-};
-
+// ── AUTH — server-side login via Apps Script ──────────────────
+// Credentials validated by Apps Script loginCheck() — no passwords in this file.
 let currentUser = null;
 
-function doLogin() {
+async function doLogin() {
   const user = document.getElementById('login-user').value.trim().toLowerCase();
   const pass = document.getElementById('login-pass').value;
   const err  = document.getElementById('login-error');
+  if (!user || !pass) { err.textContent = 'Please enter username and password'; return; }
 
-  if (!USERS[user] || USERS[user].password !== pass) {
-    err.textContent = 'Incorrect username or password';
+  const btn = document.querySelector('.login-btn');
+  btn.textContent = 'Signing in…'; btn.disabled = true;
+  err.textContent = '';
+
+  const res = await api('login', { username: user, password: pass });
+  btn.textContent = 'Sign In'; btn.disabled = false;
+
+  if (!res || !res.ok || !res.role) {
+    err.textContent = res?.error || 'Incorrect username or password';
     document.getElementById('login-pass').value = '';
     return;
   }
 
-  currentUser = { username: user, ...USERS[user] };
+  currentUser = { username: user, role: res.role, name: res.name || user };
   sessionStorage.setItem('ssab_user', JSON.stringify(currentUser));
-
-  // Hide login screen
   document.getElementById('login-screen').style.display = 'none';
   initApp();
 }
@@ -1646,13 +1669,16 @@ function initApp() {
 
   // Apply role restrictions
   if (currentUser.role === 'viewer') {
-    // Hide add/edit buttons for read-only
+    // Hide add/edit buttons for read-only users
     document.querySelectorAll('.btn-primary, .btn-warn, .btn-success').forEach(btn => {
       if (!btn.closest('#modal-update') && !btn.closest('#modal-schedule') &&
           !btn.closest('#modal-notify')) {
         btn.style.display = 'none';
       }
     });
+    // Also hide New Job nav tab
+    const intakeBtn = document.getElementById('nb-intake');
+    if (intakeBtn) intakeBtn.style.display = 'none';
   }
 
   // Add user badge to nav — only once
