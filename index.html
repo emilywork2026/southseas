@@ -645,7 +645,7 @@ function populateStaffSelects() {
 }
 
 // ▼▼▼ PASTE YOUR NEW APPS SCRIPT WEB APP URL HERE ▼▼▼
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxZKErlVzgbWvbPLofgXTr3vBU0DXIJSNtKEHKMsGd60-3lJ-xLlNpIIi_UUKtkTdUmZQ/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxCdsZrqcmd6ZtFMAShjkD-oPlBRx2GDdi5hjLn4cbCgpfu2okQshuSDkysdFZDKXHvwA/exec';
 // ▲▲▲ After deploying new Apps Script version, replace the URL above ▲▲▲
 
 // ══ NAVIGATION ═══════════════════════════════════
@@ -663,24 +663,19 @@ function showPage(id) {
 }
 
 // ══ API ═══════════════════════════════════════════
-// Read-only actions use GET; write actions use POST with JSON body
-// (keeps sensitive data out of URL / browser history / server logs)
-const POST_ACTIONS = new Set(['updateStatus','newIntake','notifyCustomer','login','sendWeeklyReport']);
-
+// Apps Script cross-origin fetch: all requests use GET with URL params.
+// POST with JSON body causes CORS preflight failures on the Apps Script redirect chain.
+// Data is protected by HTTPS in transit. Long fields (notes, emails) are URL-encoded safely.
 async function api(action, body={}) {
   try {
-    let res;
-    if (POST_ACTIONS.has(action)) {
-      res = await fetch(SCRIPT_URL, {
-        method: 'POST', redirect: 'follow',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, ...body }),
-      });
-    } else {
-      const params = new URLSearchParams({action});
-      Object.entries(body).forEach(([k,v])=>{ if(v!==undefined&&v!==null) params.set(k,String(v)); });
-      res = await fetch(SCRIPT_URL+'?'+params.toString(), { method:'GET', redirect:'follow' });
-    }
+    const params = new URLSearchParams({action});
+    Object.entries(body).forEach(([k,v])=>{
+      if (v !== undefined && v !== null) params.set(k, String(v));
+    });
+    const res = await fetch(SCRIPT_URL+'?'+params.toString(), {
+      method: 'GET',
+      redirect: 'follow',
+    });
     if (!res.ok) {
       console.error('HTTP error', res.status, 'for action:', action);
       return {ok:false, error:'HTTP '+res.status};
