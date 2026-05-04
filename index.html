@@ -359,9 +359,82 @@ html,body{height:100%;background:var(--bg);color:var(--tx);font-size:13px;line-h
   .nav-label,.sidebar-footer,.nav-badge{display:none}
   .nav-item{padding:6px 10px;margin:0;white-space:nowrap}
 }
+
+/* ── LOGIN SCREEN ─────────────────────────────────── */
+#login-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:0}
+#login-screen.hidden{display:none}
+.login-card{background:var(--surf);border:1px solid var(--bdr);border-radius:var(--rx);padding:36px 40px;width:360px;display:flex;flex-direction:column;gap:20px}
+.login-logo{display:flex;align-items:center;gap:12px;margin-bottom:4px}
+.login-logo-icon{width:38px;height:38px;background:var(--acc);border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.login-logo-icon svg{width:18px;height:18px;fill:#fff}
+.login-logo-text strong{font-size:16px;font-weight:600;display:block}
+.login-logo-text span{font-size:10px;color:var(--mut);text-transform:uppercase;letter-spacing:.6px}
+.login-title{font-size:14px;font-weight:500;color:var(--tx)}
+.login-sub{font-size:12px;color:var(--mut);margin-top:-14px}
+.login-form{display:flex;flex-direction:column;gap:12px}
+.login-field{display:flex;flex-direction:column;gap:4px}
+.login-label{font-size:10px;text-transform:uppercase;letter-spacing:.4px;color:var(--mut);font-weight:500}
+.login-input{background:var(--card);border:1px solid var(--bdr);border-radius:var(--r);padding:9px 12px;color:var(--tx);font-size:13px;outline:none;font-family:inherit;transition:border-color .15s;width:100%}
+.login-input:focus{border-color:var(--acc);background:var(--surf)}
+.login-input::placeholder{color:var(--hint)}
+.login-error{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);border-radius:var(--r);padding:8px 12px;font-size:12px;color:#fca5a5;display:none}
+.login-error.visible{display:block}
+.login-btn{background:var(--acc);color:#fff;border:none;border-radius:var(--r);padding:10px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s;width:100%;display:flex;align-items:center;justify-content:center;gap:8px}
+.login-btn:hover{background:var(--acc2)}
+.login-btn:disabled{opacity:.55;cursor:not-allowed}
+.login-spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:none}
+.login-btn.loading .login-spinner{display:block}
+.login-btn.loading .login-btn-text{opacity:.7}
+@keyframes spin{to{transform:rotate(360deg)}}
+.login-footer{text-align:center;font-size:10.5px;color:var(--hint)}
+/* Role badge in sidebar after login */
+.role-badge{font-size:9px;text-transform:uppercase;letter-spacing:.5px;padding:1px 6px;border-radius:3px;font-weight:600}
+.role-owner{background:rgba(232,93,38,.18);color:var(--acc)}
+.role-manager{background:rgba(59,130,246,.15);color:#93c5fd}
+.role-viewer{background:rgba(136,135,128,.15);color:var(--mut)}
+/* Viewer: hide write actions */
+body.role-viewer .btn-primary,
+body.role-viewer #update-selected-btn,
+body.role-viewer #quick-bar{display:none!important}
 </style>
 </head>
 <body>
+
+<!-- ═══════════════════════════════ LOGIN SCREEN ═══════════════════════════ -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-logo-icon">
+        <svg viewBox="0 0 24 24"><path d="M13 3L4 14h7l-2 7 9-11h-7z"/></svg>
+      </div>
+      <div class="login-logo-text">
+        <strong>South Seas Auto Body</strong>
+        <span>Job Management System</span>
+      </div>
+    </div>
+    <div class="login-title">Sign in to continue</div>
+    <div class="login-sub">Enter your shop credentials below</div>
+    <div class="login-form">
+      <div class="login-field">
+        <div class="login-label">Username</div>
+        <input class="login-input" id="login-username" type="text" placeholder="emily / john / view" autocomplete="username" autocapitalize="none" spellcheck="false"/>
+      </div>
+      <div class="login-field">
+        <div class="login-label">Password</div>
+        <div style="position:relative">
+          <input class="login-input" id="login-password" type="password" placeholder="••••••••" autocomplete="current-password"/>
+          <span id="pw-toggle" style="position:absolute;right:11px;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--hint);font-size:12px;user-select:none" onclick="togglePW()">show</span>
+        </div>
+      </div>
+      <div class="login-error" id="login-error">Incorrect username or password</div>
+      <button class="login-btn" id="login-btn" onclick="doLogin()">
+        <span class="login-btn-text">Sign in</span>
+        <div class="login-spinner"></div>
+      </button>
+    </div>
+    <div class="login-footer">South Seas Auto Body · Richmond BC · 604-278-5121</div>
+  </div>
+</div>
 
 <div id="app">
 
@@ -432,11 +505,14 @@ html,body{height:100%;background:var(--bg);color:var(--tx);font-size:13px;line-h
   </div>
   <div class="sidebar-footer">
     <div class="user-row">
-      <div class="user-av-sm">EM</div>
-      <div>
-        <div class="user-name">Emily</div>
-        <div class="user-role">Office manager</div>
+      <div class="user-av-sm" id="sb-avatar">EM</div>
+      <div style="flex:1;min-width:0">
+        <div class="user-name" id="sb-name">Emily</div>
+        <div style="display:flex;align-items:center;gap:5px;margin-top:2px">
+          <span class="role-badge role-owner" id="sb-role-badge">Owner</span>
+        </div>
       </div>
+      <span title="Sign out" style="cursor:pointer;color:var(--hint);font-size:13px;padding:3px 4px" onclick="doLogout()">⏻</span>
     </div>
   </div>
 </div>
@@ -1036,6 +1112,104 @@ html,body{height:100%;background:var(--bg);color:var(--tx);font-size:13px;line-h
 
 <!-- ═══════════════════════════════ SCRIPTS ════════════════════════════════ -->
 <script>
+/* ════════════════════════════════════════════════════
+   SESSION & LOGIN
+════════════════════════════════════════════════════ */
+const SESSION_KEY = 'ssab_user';
+
+function getSession(){
+  try { return JSON.parse(sessionStorage.getItem(SESSION_KEY)||'null'); } catch(_){ return null; }
+}
+function setSession(data){ sessionStorage.setItem(SESSION_KEY, JSON.stringify(data)); }
+function clearSession(){ sessionStorage.removeItem(SESSION_KEY); }
+
+function applySession(user){
+  const initials = (user.name||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+  const avTop = document.getElementById('user-av-top');
+  const avSb  = document.getElementById('sb-avatar');
+  const sbNm  = document.getElementById('sb-name');
+  const badge = document.getElementById('sb-role-badge');
+  if(avTop) avTop.textContent = initials;
+  if(avSb)  avSb.textContent  = initials;
+  if(sbNm)  sbNm.textContent  = user.name;
+  if(badge){
+    const roleMap = {owner:'Owner',manager:'Manager',viewer:'Viewer'};
+    badge.textContent = roleMap[user.role] || user.role;
+    badge.className   = 'role-badge role-'+(user.role||'viewer');
+  }
+  document.body.classList.remove('role-owner','role-manager','role-viewer');
+  document.body.classList.add('role-'+(user.role||'viewer'));
+}
+
+async function doLogin(){
+  const btn   = document.getElementById('login-btn');
+  const err   = document.getElementById('login-error');
+  const uname = document.getElementById('login-username').value.trim().toLowerCase();
+  const pass  = document.getElementById('login-password').value;
+  if(!uname||!pass){
+    err.textContent = 'Please enter both username and password';
+    err.classList.add('visible'); return;
+  }
+  btn.classList.add('loading'); btn.disabled = true;
+  err.classList.remove('visible');
+  try {
+    const params = new URLSearchParams({action:'login',username:uname,password:pass});
+    const res  = await fetch(SCRIPT_URL+'?'+params.toString(),{method:'GET',redirect:'follow'});
+    const data = await res.json();
+    if(data.ok){
+      const session = {username:uname,name:data.name,role:data.role};
+      setSession(session);
+      applySession(session);
+      document.getElementById('login-screen').classList.add('hidden');
+      loadLiveData();
+      toast('Welcome, '+data.name+'!','success',2800);
+    } else {
+      err.textContent = data.error||'Incorrect username or password';
+      err.classList.add('visible');
+      document.getElementById('login-password').value='';
+      document.getElementById('login-password').focus();
+    }
+  } catch(e){
+    err.textContent = 'Connection error — check network and try again';
+    err.classList.add('visible');
+  }
+  btn.classList.remove('loading'); btn.disabled=false;
+}
+
+function doLogout(){
+  if(!confirm('Sign out of South Seas?')) return;
+  clearSession();
+  document.body.classList.remove('role-owner','role-manager','role-viewer');
+  document.getElementById('login-username').value='';
+  document.getElementById('login-password').value='';
+  document.getElementById('login-error').classList.remove('visible');
+  document.getElementById('login-screen').classList.remove('hidden');
+  setTimeout(()=>document.getElementById('login-username').focus(),120);
+}
+
+function togglePW(){
+  const inp=document.getElementById('login-password');
+  const tog=document.getElementById('pw-toggle');
+  if(inp.type==='password'){inp.type='text';tog.textContent='hide';}
+  else{inp.type='password';tog.textContent='show';}
+}
+
+// Enter key + session restore on page load
+window.addEventListener('load',()=>{
+  ['login-username','login-password'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
+  });
+  const saved=getSession();
+  if(saved){
+    applySession(saved);
+    document.getElementById('login-screen').classList.add('hidden');
+    // Don't call loadLiveData() here — init already ran it at bottom of script
+  } else {
+    setTimeout(()=>{ const u=document.getElementById('login-username'); if(u) u.focus(); },120);
+  }
+});
+
 /* ── CONSTANTS ─────────────────────────────────── */
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxCdsZrqcmd6ZtFMAShjkD-oPlBRx2GDdi5hjLn4cbCgpfu2okQshuSDkysdFZDKXHvwA/exec';
 
@@ -1501,6 +1675,8 @@ async function apiFetch(action, params={}){
 }
 
 async function loadLiveData(){
+  // Don't attempt API calls if not logged in
+  if(!getSession()) return;
   showLoadingBar(true);
   try {
     const res = await apiFetch('getDashboard');
