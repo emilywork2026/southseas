@@ -782,10 +782,10 @@ body.role-viewer #quick-bar{display:none!important}
   </div>
 
   <div class="card">
-    <div class="card-head"><div class="card-title">Parts return log</div><div class="card-action">+ Log return</div></div>
+    <div class="card-head"><div class="card-title">Parts return log</div><div class="card-action" onclick="openPartsLog()">+ Log return</div></div>
     <table class="parts-table">
       <thead><tr>
-        <th>Return date</th><th>WO# / Customer</th><th>Dealership</th><th>Part #</th><th>Reason</th><th>Driver</th><th>Credit status</th>
+        <th>Return date</th><th>WO#</th><th>Dealership</th><th>Part #</th><th>Reason</th><th>Driver</th><th>Tracking</th><th>Credit status</th>
       </tr></thead>
       <tbody id="parts-tbody"></tbody>
     </table>
@@ -1215,7 +1215,7 @@ window.addEventListener('load',()=>{
 });
 
 /* ── CONSTANTS ─────────────────────────────────── */
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxQ0cJPAJwiyWVOvZLGVsCf0g0jsvf2CiQLzwYwYSPPzpq3dsBtm2BXHHaifRElgmhUnQ/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyqwSllgI9T0OtSc_cFIqggn6Viu63gLrYhxmzFKXfS2mPihjCZnBx96_2cSObJkJ6cKg/exec';
 
 const PILL_CLASS = {
   'WIP':'s-wip','In Progress':'s-inprog','In progress':'s-inprog',
@@ -1266,12 +1266,7 @@ const TECHS = [
   {n:'Ami',b:0,p:143},{n:'Ammar Ali',b:0,p:211},{n:'Marco',b:134,p:0},{n:'John',b:78,p:54},
 ];
 
-const PARTS = [
-  {dt:'02-May-2026',wo:'WO-4399',dealer:'Metro Toyota',part:'PA-7821-B',reason:'Incorrect part',driver:'Nelson',credit:'Pending'},
-  {dt:'30-Apr-2026',wo:'WO-4391',dealer:'Lordco Richmond',part:'BF-2201',reason:'Overordered',driver:'David',credit:'Pending'},
-  {dt:'28-Apr-2026',wo:'WO-4380',dealer:'NAPA Auto Parts',part:'AR-5501-X',reason:'Damaged on arrival',driver:'Aashi',credit:'Received'},
-  {dt:'22-Apr-2026',wo:'WO-4366',dealer:'Metro Toyota',part:'EM-1104',reason:'Wrong colour',driver:'RC',credit:'Received'},
-];
+const PARTS = []; // populated from live sheet — see loadPartsReturn()
 
 const NOTIFS = [
   {type:'warn',msg:'Chen, Wei — Ready for Pickup, courtesy car NW391N still assigned',time:'Today 9:14 AM'},
@@ -1604,17 +1599,51 @@ function renderTechs(){
 
 /* ── RENDER: PARTS RETURNS ──────────────────────── */
 function renderParts(){
-  document.getElementById('parts-tbody').innerHTML = PARTS.map(p=>`
-    <tr>
-      <td class="mono">${p.dt}</td>
-      <td><div class="mono">${p.wo}</div></td>
-      <td style="color:var(--mut)">${p.dealer}</td>
-      <td class="mono" style="font-size:10px">${p.part}</td>
-      <td style="font-size:11px;color:var(--mut)">${p.reason}</td>
-      <td style="font-size:11px;color:var(--mut)">${p.driver}</td>
-      <td><span class="credit-pill ${p.credit==='Pending'?'cp-pending':'cp-done'}">${p.credit}</span></td>
-    </tr>
-  `).join('');
+  const tbody = document.getElementById('parts-tbody');
+  if(!tbody) return;
+
+  if(!PARTS.length){
+    tbody.innerHTML = `<tr><td colspan="8" style="padding:24px;text-align:center;color:var(--hint);font-size:12px">No parts returns on record</td></tr>`;
+    // Update alert banner
+    const alert = document.querySelector('#page-parts .alert-info span, #page-parts .alert-info');
+    return;
+  }
+
+  tbody.innerHTML = PARTS.map((p,i)=>{
+    const creditLow = (p.credit||'').toLowerCase();
+    const creditClass = creditLow.includes('pending') ? 'cp-pending'
+                      : creditLow.includes('received')||creditLow.includes('credit') ? 'cp-done'
+                      : creditLow.includes('write') ? 'cp-done'
+                      : 'cp-pending';
+    const creditLabel = p.credit || '—';
+    const wo = p.wo || '—';
+    const hasTracking = p.tracking && p.tracking.trim();
+    return `<tr>
+      <td class="mono" style="color:var(--acc);font-size:11px">${p.dt||'—'}</td>
+      <td><div class="mono">${wo}</div></td>
+      <td style="font-size:12px;color:var(--tx)">${p.dealer||'—'}</td>
+      <td class="mono" style="font-size:10.5px;color:var(--acc2)">${p.part||'—'}</td>
+      <td style="font-size:11px;color:var(--mut)">${p.reason||'—'}</td>
+      <td style="font-size:11px;color:var(--mut)">${p.driver||'—'}</td>
+      <td style="font-size:11px;color:var(--hint)">${hasTracking?p.tracking:'—'}</td>
+      <td><span class="credit-pill ${creditClass}">${creditLabel}</span></td>
+    </tr>`;
+  }).join('');
+
+  // Update alert banner with live pending count
+  const pending = PARTS.filter(p=>(p.credit||'').toLowerCase().includes('pending'));
+  const alertEl = document.querySelector('#page-parts .alert-info');
+  if(alertEl){
+    const msgEl = alertEl.querySelector('span') || alertEl;
+    if(pending.length > 0){
+      alertEl.style.display='flex';
+      const textNode = alertEl.childNodes[alertEl.childNodes.length-1];
+      alertEl.innerHTML = alertEl.innerHTML.replace(/\d+ parts? returns?[^<]*/,
+        `${pending.length} part${pending.length!==1?'s':''} return${pending.length!==1?'s':''} pending credit confirmation — follow up with dealerships`);
+    } else {
+      alertEl.style.display='none';
+    }
+  }
 }
 
 /* ── RENDER: NOTIFICATIONS ──────────────────────── */
@@ -1688,6 +1717,9 @@ async function loadLiveData(force=false){
       apiFetch('search'),
       apiFetch('getDashboard'),
     ]);
+
+    // Parts return loads separately (not blocking dashboard render)
+    loadPartsReturn();
 
     let dataOk = false;
 
@@ -1846,6 +1878,38 @@ function applyLiveTechHours(techHoursMap){
     TECHS.push({n:name, b:Math.round((data.b||0)*10)/10, p:Math.round((data.p||0)*10)/10});
   });
   if(TECHS.length > 0) renderTechs();
+}
+
+/* ── PARTS RETURN: live fetch ───────────────────── */
+// Sheet schema (10 cols, 0-based):
+// 0=Return Date, 1=WO#, 2=Dealership, 3=Invoice#, 4=Part#,
+// 5=Qty, 6=Return Reason, 7=Driver, 8=Tracking, 9=Credit Status
+async function loadPartsReturn(){
+  if(!getSession()) return;
+  try {
+    const res = await apiFetch('getPartsReturn');
+    if(res && res.ok && Array.isArray(res.rows)){
+      PARTS.length = 0;
+      res.rows.forEach(r => PARTS.push({
+        dt:     r[0] || '',
+        wo:     r[1] || '',
+        dealer: r[2] || '',
+        invoice:r[3] || '',
+        part:   r[4] || '',
+        qty:    r[5] || '',
+        reason: r[6] || '',
+        driver: r[7] || '',
+        tracking:r[8]|| '',
+        credit: r[9] || '',
+      }));
+      // Update pending count badge
+      const pending = PARTS.filter(p=>(p.credit||'').toLowerCase().includes('pending')).length;
+      document.querySelectorAll('.nav-badge.amber').forEach(el=>el.textContent=pending);
+      renderParts();
+    }
+  } catch(e){
+    console.warn('loadPartsReturn:', e);
+  }
 }
 
 // Build calendar events from live JOBS
