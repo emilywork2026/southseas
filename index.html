@@ -461,6 +461,10 @@ body.role-viewer #quick-bar{display:none!important}
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
       <span class="notif-ct" id="notif-count">3</span>
     </div>
+    <div class="tb-chip" id="refresh-chip" onclick="loadLiveData(true)" title="Refresh data from Google Sheets (R)">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.78"/></svg>
+      Refresh
+    </div>
     <div class="user-av" id="user-av-top" title="Signed in as Emily">EM</div>
   </div>
 </div>
@@ -1665,29 +1669,45 @@ async function apiFetch(action, params={}){
   const qs = new URLSearchParams({action, ...params}).toString();
   const url = `${SCRIPT_URL}?${qs}`;
   try {
-    const r = await fetch(url);
+    const r = await fetch(url, {method:'GET', redirect:'follow'});
     if(!r.ok) throw new Error(`HTTP ${r.status}`);
-    return await r.json();
+    const data = await r.json();
+    return data;
   } catch(e){
-    console.warn('API error:', e);
+    console.warn(`API error (${action}):`, e.message||e);
     return null;
   }
 }
 
-async function loadLiveData(){
-  // Don't attempt API calls if not logged in
+async function loadLiveData(force=false){
   if(!getSession()) return;
   showLoadingBar(true);
   try {
-    const res = await apiFetch('getDashboard');
-    if(res && res.ok){
-      _liveData = res.data;
+    // Fire both calls in parallel — search gives all jobs, getDashboard gives counts/CC/nextWeek
+    const [searchRes, dashRes] = await Promise.all([
+      apiFetch('search'),
+      apiFetch('getDashboard'),
+    ]);
+
+    let dataOk = false;
+
+    // ── Apply job list from search ──────────────────────────
+    if(searchRes && searchRes.ok && Array.isArray(searchRes.jobs) && searchRes.jobs.length > 0){
+      applyJobsFromSearch(searchRes.jobs);
+      dataOk = true;
+    }
+
+    // ── Apply dashboard counts + CC + nextWeek ──────────────
+    if(dashRes && dashRes.ok && dashRes.counts){
+      applyDashboardCounts(dashRes.counts);
+      dataOk = true;
+    }
+
+    if(dataOk){
       _lastFetch = Date.now();
-      applyLiveData();
-      toast('Data refreshed from Google Sheets', 'success', 2400);
+      if(force) toast('Data refreshed from Google Sheets','success',2000);
     } else {
-      // fallback to sample — no error shown since this is a demo build
-      console.log('Using sample data (Apps Script not reachable in preview)');
+      console.warn('Live data unavailable — using sample data');
     }
   } catch(e){
     console.warn('loadLiveData:', e);
@@ -1696,24 +1716,191 @@ async function loadLiveData(){
   }
 }
 
-function applyLiveData(){
-  if(!_liveData) return;
-  // When live: replace JOBS, FLEET, etc. arrays and re-render
-  // For now sample data is used; this wires up the plumbing
-  if(_liveData.jobs)  Object.assign(JOBS, _liveData.jobs);
+// ── Map live job objects → local JOBS array format ──────────
+function normaliseJob(j){
+  // Apps Script returns: rowIndex, source, wo, claim, name, contact,
+  // vehicle, plate, inDate, outDate, schedDate, status, notes,
+  // b, p, hrs, cc, bodyTech, paintTech, email, payment, closed, po
+  const st = j.status || j.stage || '';
+  return {
+    rowIndex:  j.rowIndex,
+    source:    j.source || 'WIP',
+    n:         j.name    || '',
+    v:         j.vehicle || '',
+    p:         j.plate   || '',
+    wo:        j.wo      || '',
+    cl:        j.claim   || '',
+    st:        st,
+    out:       j.outDate  || j.schedDate || 'TBD',
+    cc:        j.cc       || '',
+    type:      (j.po||'').toLowerCase()==='private'||(!j.claim&&!j.wo) ? 'Private' : 'ICBC',
+    inD:       j.inDate   || '',
+    schedDate: j.schedDate|| '',
+    body:      j.bodyTech || '',
+    paint:     j.paintTech|| '',
+    email:     j.email    || '',
+    phone:     j.contact  || '',
+    payment:   j.payment  || '',
+    notes:     j.notes    || '',
+    b:         j.b || 0,
+    pHrs:      j.p || 0,
+    closed:    j.closed   || '',
+  };
+}
+
+function applyJobsFromSearch(rawJobs){
+  // Replace the JOBS array contents in-place (keep reference alive)
+  const mapped = rawJobs.map(normaliseJob);
+  JOBS.length = 0;
+  mapped.forEach(j => JOBS.push(j));
+
+  // Update nav badge
+  const active = JOBS.filter(j => {
+    const sl = (j.st||'').toLowerCase();
+    return !sl.includes('picked up') && !sl.includes('cancel') &&
+           !sl.includes('total loss') && j.source !== 'Archive' && j.source !== 'Cancelled';
+  });
+  const nbEl = document.getElementById('nav-count');
+  if(nbEl) nbEl.textContent = active.length;
+
+  // Re-render all views that show jobs
   renderDashJobs();
   renderSearchJobs();
+  renderUpcomingMini();
+  renderUpcomingTable();
+  renderCalendarEvents();
+}
+
+function applyDashboardCounts(counts){
+  // ── Stat cards ──────────────────────────────────────────
+  const sv = document.querySelectorAll('.stat-value');
+  if(sv[0]) sv[0].textContent = counts.todayIN   || 0;
+  if(sv[1]) sv[1].textContent = counts.todayOUT  || 0;
+  if(sv[2]) sv[2].textContent = counts.totalActive|| 0;
+  if(sv[3]) sv[3].textContent = (counts.nextWeek && counts.nextWeek.jobs) ? counts.nextWeek.jobs.length : 0;
+
+  // ── Next week hours mini ────────────────────────────────
+  const nw = counts.nextWeek || {};
+  const bHr = Math.round((nw.b||0)*10)/10;
+  const pHr = Math.round((nw.p||0)*10)/10;
+  const tHr = Math.round((nw.total||0)*10)/10;
+  const maxH = Math.max(bHr, pHr, tHr, 1);
+  document.querySelectorAll('.hours-bar-fill').forEach((bar,i)=>{
+    const vals = [bHr,pHr,tHr];
+    bar.style.width = Math.round(vals[i]/maxH*100)+'%';
+  });
+  document.querySelectorAll('.hours-val').forEach((el,i)=>{
+    const vals = [bHr+'h', pHr+'h', tHr+'h'];
+    if(vals[i] !== undefined) el.textContent = vals[i];
+  });
+
+  // ── Courtesy cars ───────────────────────────────────────
+  if(counts.ccStatus){
+    applyLiveCCStatus(counts.ccStatus, counts.ccInUse||{});
+  }
+
+  // ── Tech hours from dashboard techHours map ─────────────
+  if(counts.techHours && Object.keys(counts.techHours).length > 0){
+    applyLiveTechHours(counts.techHours);
+  }
+}
+
+function applyLiveCCStatus(ccStatus, ccInUse){
+  // ccStatus: { plate: {active, name, vehicle, status, inDate, wo} }
+  const avail = Object.values(ccStatus).filter(c=>!c.active).length;
+  const inUse = Object.values(ccStatus).filter(c=> c.active).length;
+
+  // Update fleet summary numbers
+  document.querySelectorAll('.fleet-stat-n').forEach((el,i)=>{
+    if(i===0) el.textContent = avail;
+    if(i===1) el.textContent = inUse;
+    if(i===3) el.textContent = Object.keys(ccStatus).length;
+  });
+  const navBadge = document.getElementById('nav-cars-avail');
+  if(navBadge) navBadge.textContent = avail;
+
+  // Update dashboard CC mini
+  const ccNums = document.querySelectorAll('.cc-num');
+  if(ccNums[0]) ccNums[0].textContent = avail;
+  if(ccNums[1]) ccNums[1].textContent = inUse;
+  if(ccNums[2]) ccNums[2].textContent = Object.keys(ccStatus).length;
+
+  // Rebuild fleet cards with live data
+  FLEET.length = 0;
+  Object.entries(ccStatus).forEach(([plate, info])=>{
+    FLEET.push({
+      plate,
+      stat: info.active ? 'inuse' : 'avail',
+      cust: info.active ? info.name : null,
+      days: info.active ? (info.inDate ? 'Since '+info.inDate : 'In use') : null,
+    });
+  });
+  renderFleetEnhanced();
+  renderMiniCars();
+}
+
+function applyLiveTechHours(techHoursMap){
+  // techHoursMap: { techName: {b, p, jobs:[]} }
+  TECHS.length = 0;
+  Object.entries(techHoursMap).forEach(([name,data])=>{
+    TECHS.push({n:name, b:Math.round((data.b||0)*10)/10, p:Math.round((data.p||0)*10)/10});
+  });
+  if(TECHS.length > 0) renderTechs();
+}
+
+// Build calendar events from live JOBS
+function renderCalendarEvents(){
+  // Clear and rebuild CAL_EVENTS from live job data
+  Object.keys(CAL_EVENTS).forEach(k=>delete CAL_EVENTS[k]);
+
+  JOBS.forEach(j=>{
+    function addEv(dateStr, type, label){
+      if(!dateStr || dateStr==='TBD') return;
+      // Convert dd-MMM-yyyy to yyyy-mm-dd key
+      const MONTHS={Jan:'01',Feb:'02',Mar:'03',Apr:'04',May:'05',Jun:'06',
+                    Jul:'07',Aug:'08',Sep:'09',Oct:'10',Nov:'11',Dec:'12'};
+      const m = dateStr.match(/^(\d{2})-([A-Za-z]{3})-(\d{4})/);
+      if(!m) return;
+      const key = `${m[3]}-${MONTHS[m[2]]||'01'}-${m[1]}`;
+      if(!CAL_EVENTS[key]) CAL_EVENTS[key]=[];
+      // Avoid duplicates
+      if(!CAL_EVENTS[key].some(e=>e.l===label)) CAL_EVENTS[key].push({t:type,l:label});
+    }
+    const shortName = j.n.split(',')[0]; // last name only for space
+    addEv(j.inD,       'in',    shortName+' IN');
+    addEv(j.out,       'out',   shortName+' OUT');
+    addEv(j.schedDate, 'sched', shortName+' sched');
+  });
+
+  renderCalendar();
+}
+
+function applyLiveData(){
+  // Legacy stub — real work done in applyJobsFromSearch + applyDashboardCounts
 }
 
 async function apiUpdateStatus(rowIndex, customerName, newStatus, extras={}){
   showLoadingBar(true);
   try {
     const res = await apiFetch('updateStatus', {
-      rowIndex, customerName, status: newStatus, ...extras
+      rowIndex,
+      source:    extras.source || 'WIP',
+      status:    newStatus,
+      outDate:   extras.outDate   || '',
+      schedDate: extras.schedDate || '',
+      bodyTech:  extras.bodyTech  || '',
+      paintTech: extras.paintTech || '',
+      payment:   extras.payment   || '',
+      email:     extras.email     || '',
+      b:         extras.bhrs      || '',
+      p:         extras.phrs      || '',
+      cc:        extras.cc        || '',
+      notes:     extras.notes     || '',
+      partsReturn: extras.partsReturn || '',
     });
     if(res && res.ok){
       toast(`${customerName} → ${newStatus}`, 'success');
-      await loadLiveData();
+      await loadLiveData(false);
     } else {
       toast(res?.error || 'Update failed — check Apps Script logs', 'error');
     }
@@ -1725,10 +1912,29 @@ async function apiUpdateStatus(rowIndex, customerName, newStatus, extras={}){
 async function apiNewJob(jobData){
   showLoadingBar(true);
   try {
-    const res = await apiFetch('addNewJob', jobData);
+    // Action name in Apps Script is 'newIntake' not 'addNewJob'
+    const res = await apiFetch('newIntake', {
+      po:        jobData.jobType==='Private' ? 'Private' : 'ICBC',
+      wo:        jobData.wo        || '',
+      claim:     jobData.claim     || '',
+      name:      jobData.name      || '',
+      contact:   jobData.phone     || '',
+      vehicle:   jobData.vehicle   || '',
+      plate:     jobData.plate     || '',
+      inDate:    jobData.inDate    || '',
+      schedDate: jobData.schedDate || '',
+      b:         jobData.bhrs      || '',
+      p:         jobData.phrs      || '',
+      bodyTech:  jobData.bodyTech  || '',
+      paintTech: jobData.paintTech || '',
+      cc:        jobData.cc        || '',
+      notes:     jobData.notes     || '',
+      email:     jobData.email     || '',
+      payment:   jobData.payment   || '',
+    });
     if(res && res.ok){
-      toast(`New job created — ${jobData.name}`, 'success');
-      await loadLiveData();
+      toast('Job added to New Job List — '+jobData.name, 'success');
+      await loadLiveData(false);
     } else {
       toast(res?.error || 'Failed to create job', 'error');
     }
@@ -1827,7 +2033,7 @@ document.addEventListener('keydown', e => {
   // F = focus search
   if(e.key==='f'||e.key==='F'){ navTo('search'); document.getElementById('f-query').focus(); return; }
   // R = refresh
-  if(e.key==='r'&&e.metaKey===false){ loadLiveData(); return; }
+  if(e.key==='r'&&e.metaKey===false){ loadLiveData(true); return; }
   // U = update selected
   if((e.key==='u'||e.key==='U') && _selectedJob){ openUpdateModal(_selectedJob); return; }
 });
@@ -1854,7 +2060,6 @@ function saveUpdate(){
   const newStatus = document.getElementById('upd-status').value;
   const jobName   = document.getElementById('upd-name').textContent;
 
-  // Detect Refix / No Show for auto-flow
   if(newStatus === 'Refix'){
     closeModal('update-modal');
     openRefixFlow(_selectedJob);
@@ -1866,27 +2071,30 @@ function saveUpdate(){
     return;
   }
 
-  // Build payload
   const extras = {
-    outDate:  document.getElementById('upd-out').value || '',
-    schedDate:document.getElementById('upd-sched').value || '',
-    payment:  document.getElementById('upd-payment').value || '',
-    cc:       document.getElementById('upd-cc').value || '',
-    bhrs:     document.getElementById('upd-bhrs').value || '',
-    phrs:     document.getElementById('upd-phrs').value || '',
-    notes:    document.getElementById('upd-notes').value || '',
-    email:    document.getElementById('upd-email').value || '',
-    bodyTech: document.querySelector('#upd-body-picker .tech-btn.active')?.textContent || '',
-    paintTech:document.querySelector('#upd-paint-picker .tech-btn.active')?.textContent || '',
-    partsReturn: document.getElementById('upd-parts-cb').checked ? 'Y' : '',
-    notify:   document.querySelector('#upd-notify .notify-opt.active')?.textContent || '',
-    rowIndex: _selectedJob?.rowIndex || '',
+    source:      _selectedJob?.source    || 'WIP',
+    outDate:     document.getElementById('upd-out').value      || '',
+    schedDate:   document.getElementById('upd-sched').value    || '',
+    payment:     document.getElementById('upd-payment').value  || '',
+    cc:          document.getElementById('upd-cc').value       || '',
+    bhrs:        document.getElementById('upd-bhrs').value     || '',
+    phrs:        document.getElementById('upd-phrs').value     || '',
+    notes:       document.getElementById('upd-notes').value    || '',
+    email:       document.getElementById('upd-email').value    || '',
+    bodyTech:    document.querySelector('#upd-body-picker .tech-btn.active')?.textContent  || '',
+    paintTech:   document.querySelector('#upd-paint-picker .tech-btn.active')?.textContent || '',
+    partsReturn: document.getElementById('upd-parts-cb').checked ? 'true' : '',
+    notify:      document.querySelector('#upd-notify .notify-opt.active')?.textContent    || '',
   };
 
-  if(newStatus && jobName){
-    apiUpdateStatus(extras.rowIndex, jobName, newStatus, extras);
+  const rowIndex = _selectedJob?.rowIndex || '';
+
+  if(newStatus && jobName && rowIndex){
+    apiUpdateStatus(rowIndex, jobName, newStatus, extras);
+  } else if(!rowIndex){
+    toast('Cannot update — job has no row index. Refresh and try again.', 'warn');
   } else {
-    toast('No status change made', 'info', 2000);
+    toast('No status change selected', 'info', 2000);
   }
 
   closeModal('update-modal');
@@ -1901,41 +2109,44 @@ function saveIntake(){
 
   const jobData = {
     name,
-    wo:       document.getElementById('int-wo').value,
-    claim:    document.getElementById('int-claim').value,
-    phone:    document.getElementById('int-phone').value,
-    vehicle:  document.getElementById('int-vehicle').value,
-    plate:    document.getElementById('int-plate').value.toUpperCase(),
-    jobType:  document.querySelector('#intake-type .seg-opt.active')?.textContent || 'ICBC',
-    status:   document.querySelector('#intake-status .seg-opt.active')?.textContent || 'Towed IN',
-    inDate:   document.getElementById('int-in').value,
-    schedDate:document.getElementById('int-sched').value,
-    cc:       document.getElementById('int-cc').value,
-    bodyTech: document.querySelector('#int-body-picker .tech-btn.active')?.textContent || '',
-    paintTech:document.querySelector('#int-paint-picker .tech-btn.active')?.textContent || '',
-    bhrs:     document.getElementById('int-bhrs').value || '0',
-    phrs:     document.getElementById('int-phrs').value || '0',
-    email:    document.getElementById('int-email').value,
-    notes:    document.getElementById('int-notes').value,
+    jobType:   document.querySelector('#intake-type .seg-opt.active')?.textContent || 'ICBC',
+    wo:        document.getElementById('int-wo').value.trim(),
+    claim:     document.getElementById('int-claim').value.trim(),
+    phone:     document.getElementById('int-phone').value.trim(),
+    vehicle:   document.getElementById('int-vehicle').value.trim(),
+    plate:     document.getElementById('int-plate').value.trim().toUpperCase(),
+    inDate:    document.getElementById('int-in').value,
+    schedDate: document.getElementById('int-sched').value,
+    cc:        document.getElementById('int-cc').value,
+    bodyTech:  document.querySelector('#int-body-picker .tech-btn.active')?.textContent || '',
+    paintTech: document.querySelector('#int-paint-picker .tech-btn.active')?.textContent || '',
+    bhrs:      document.getElementById('int-bhrs').value || '0',
+    phrs:      document.getElementById('int-phrs').value || '0',
+    email:     document.getElementById('int-email').value.trim(),
+    notes:     document.getElementById('int-notes').value.trim(),
   };
 
-  apiNewJob(jobData);
-
-  // Optimistically add to local list for instant feedback
+  // Optimistic local insert — replaced on next live data refresh
   JOBS.unshift({
-    n:jobData.name, v:jobData.vehicle, p:jobData.plate,
-    wo:jobData.wo||'—', cl:jobData.claim, st:jobData.status,
-    out:'TBD', cc:jobData.cc, type:jobData.jobType,
-    inD:jobData.inDate||'', body:jobData.bodyTech, paint:jobData.paintTech,
-    email:jobData.email, phone:jobData.phone
+    rowIndex: null, source:'NJL',
+    n: jobData.name, v: jobData.vehicle, p: jobData.plate,
+    wo: jobData.wo||'—', cl: jobData.claim, st:'1 – New Intake',
+    out:'TBD', cc: jobData.cc, type: jobData.jobType,
+    inD: jobData.inDate, schedDate: jobData.schedDate,
+    body: jobData.bodyTech, paint: jobData.paintTech,
+    email: jobData.email, phone: jobData.phone,
+    b:0, pHrs:0,
   });
   renderDashJobs();
   renderSearchJobs();
 
-  // Reset form
-  ['int-wo','int-claim','int-name','int-phone','int-vehicle','int-plate','int-bhrs','int-phrs','int-email','int-notes'].forEach(id=>{
-    const el = document.getElementById(id);
-    if(el) el.value='';
+  // Send to Apps Script
+  apiNewJob(jobData);
+
+  // Reset form fields
+  ['int-wo','int-claim','int-name','int-phone','int-vehicle','int-plate',
+   'int-bhrs','int-phrs','int-email','int-notes'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
   });
 
   closeModal('intake-modal');
