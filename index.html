@@ -583,9 +583,9 @@ body.role-viewer #quick-bar{display:none!important}
           <div class="mini-action" onclick="navTo('cars')">Manage</div>
         </div>
         <div class="cc-grid">
-          <div class="cc-cell"><div class="cc-num" style="color:var(--grn)">4</div><div class="cc-lbl">Available</div></div>
-          <div class="cc-cell"><div class="cc-num" style="color:var(--amb)">7</div><div class="cc-lbl">In use</div></div>
-          <div class="cc-cell"><div class="cc-num" style="color:var(--mut)">11</div><div class="cc-lbl">Total</div></div>
+          <div class="cc-cell"><div class="cc-num" id="cc-num-avail" style="color:var(--grn)">—</div><div class="cc-lbl">Available</div></div>
+          <div class="cc-cell"><div class="cc-num" id="cc-num-inuse" style="color:var(--amb)">—</div><div class="cc-lbl">In use</div></div>
+          <div class="cc-cell"><div class="cc-num" id="cc-num-total" style="color:var(--mut)">—</div><div class="cc-lbl">Total</div></div>
         </div>
         <div id="mini-cars-list" style="padding:6px 0"></div>
       </div>
@@ -1332,6 +1332,48 @@ const UPCOMING = [
 ];
 
 /* ── HELPERS ────────────────────────────────────── */
+
+// ── Vancouver timezone date helpers ─────────────────────────
+// All "today" references use Vancouver time (America/Vancouver)
+// to match the Apps Script backend and Google Sheets.
+function nowVancouver() {
+  // Returns a Date object whose local fields (getFullYear/Month/Date)
+  // reflect the current Vancouver date — safe on any client timezone.
+  const vanStr = new Date().toLocaleString('en-CA', {timeZone:'America/Vancouver'});
+  // en-CA gives "YYYY-MM-DD, HH:MM:SS" — parse the date part
+  const datePart = vanStr.split(',')[0].trim(); // "2026-05-04"
+  const [y,m,d] = datePart.split('-').map(Number);
+  return new Date(y, m-1, d);
+}
+
+function todayVanISO() {
+  // Returns "YYYY-MM-DD" for today in Vancouver — use for <input type="date">
+  const t = nowVancouver();
+  return `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
+}
+
+function todayVanDisplay() {
+  // Returns "dd-MMM-yyyy" matching sheet format
+  const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const t = nowVancouver();
+  return `${String(t.getDate()).padStart(2,'0')}-${MONTHS[t.getMonth()]}-${t.getFullYear()}`;
+}
+
+// Parse a sheet date string "dd-MMM-yyyy" → Date (local midnight, no timezone shift)
+// Safe on Safari/Firefox (avoids "Invalid Date" from new Date('13-Apr-2026'))
+function parseJobDate(s) {
+  if (!s || s === 'TBD') return null;
+  const MONTHS = {Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
+  const m = String(s).trim().match(/^(\d{1,2})-([A-Za-z]{3})-(\d{4})$/);
+  if (m) {
+    const mo = MONTHS[m[2]];
+    if (mo !== undefined) return new Date(+m[3], mo, +m[1]);
+  }
+  // Fallback: try ISO yyyy-mm-dd
+  const iso = String(s).trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (iso) return new Date(+iso[1], +iso[2]-1, +iso[3]);
+  return null;
+}
 function makePill(st){
   const cls = PILL_CLASS[st]||'s-hold';
   return `<span class="pill ${cls}">${st}</span>`;
@@ -1462,7 +1504,7 @@ function _setTechPicker(pickerId, techName){
 }
 
 function openIntakeModal(){
-  document.getElementById('int-in').value = new Date().toISOString().split('T')[0];
+  document.getElementById('int-in').value = todayVanISO();
   // Reset CC to blank (no default selection)
   const ccEl = document.getElementById('int-cc');
   if(ccEl) ccEl.value = '';
@@ -1607,7 +1649,8 @@ function selectRow(i){
 }
 
 /* ── RENDER: CALENDAR ───────────────────────────── */
-let calYear = 2026, calMonth = 4; // 0-indexed, 4=May
+const _vanNow = nowVancouver();
+let calYear = _vanNow.getFullYear(), calMonth = _vanNow.getMonth(); // Vancouver local time
 
 function renderCalendar(){
   document.getElementById('cal-heading').textContent = `Schedule — ${MONTHS[calMonth]} ${calYear}`;
@@ -1616,7 +1659,7 @@ function renderCalendar(){
   const firstDow = new Date(calYear, calMonth, 1).getDay();
   const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
   const daysInPrev  = new Date(calYear, calMonth, 0).getDate();
-  const today = new Date();
+  const today = nowVancouver();
   const isCurrentMonth = today.getFullYear()===calYear && today.getMonth()===calMonth;
 
   let cells = [];
@@ -1969,11 +2012,13 @@ function applyLiveCCStatus(ccStatus, ccInUse){
   const navBadge = document.getElementById('nav-cars-avail');
   if(navBadge) navBadge.textContent = avail;
 
-  // Update dashboard CC mini
-  const ccNums = document.querySelectorAll('.cc-num');
-  if(ccNums[0]) ccNums[0].textContent = avail;
-  if(ccNums[1]) ccNums[1].textContent = inUse;
-  if(ccNums[2]) ccNums[2].textContent = total;
+  // Update dashboard CC mini by ID
+  const ccAvailEl = document.getElementById('cc-num-avail');
+  const ccInUseEl = document.getElementById('cc-num-inuse');
+  const ccTotalEl = document.getElementById('cc-num-total');
+  if(ccAvailEl) ccAvailEl.textContent = avail;
+  if(ccInUseEl) ccInUseEl.textContent = inUse;
+  if(ccTotalEl) ccTotalEl.textContent = total;
 
   // Rebuild fleet cards with live data
   FLEET.length = 0;
@@ -2628,7 +2673,7 @@ function savePartsLog(){
   const wo = document.getElementById('pl-wo').value.trim();
   const dealer = document.getElementById('pl-dealer').value.trim();
   if(!wo||!dealer){ toast('WO# and dealership are required','warn'); return; }
-  const today = new Date().toLocaleDateString('en-CA',{day:'2-digit',month:'short',year:'numeric'}).replace(/ /g,'-');
+  const today = todayVanDisplay();
   PARTS.unshift({
     dt: document.getElementById('pl-date').value || today,
     wo, dealer,
