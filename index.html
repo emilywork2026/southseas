@@ -851,9 +851,9 @@ body.role-viewer #quick-bar{display:none!important}
           <select class="form-input form-select" id="upd-cc">
             <option value="">— no change —</option>
             <option>N — no CC needed</option><option>Y — CC requested</option>
-            <option>VJ785L</option><option>TX235X</option><option>NW391N</option><option>SB272H</option>
-            <option>LK854L</option><option>TN321R</option><option>VJ571K</option><option>SB252H</option>
-            <option>XP926R</option><option>TX225X</option><option>VN281J</option><option>Car Rental</option>
+            <option>VJ785L</option><option>TX235X</option><option>SB272H</option><option>LK853L</option>
+            <option>TN321R</option><option>SB252H</option><option>XP925R</option><option>XP926R</option>
+            <option>TX225X</option><option>VN281J</option><option>Car Rental</option>
             <option>— Returned (clear CC)</option>
           </select>
         </div>
@@ -930,8 +930,44 @@ body.role-viewer #quick-bar{display:none!important}
     <div class="modal-foot">
       <div class="modal-hint">Syncs to WIP + NJL automatically</div>
       <button class="btn btn-ghost" onclick="closeModal('update-modal')">Cancel</button>
+      <button class="btn btn-ghost" onclick="openEditCustomerFromUpdate()" style="color:var(--acc)">Edit profile</button>
       <button class="btn btn-success" onclick="closeModal('update-modal')">Notify only</button>
       <button class="btn btn-primary" onclick="saveUpdate()">Save update</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT CUSTOMER PROFILE MODAL -->
+<div class="modal-overlay" id="edit-customer-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></div>
+      <div class="modal-title">Edit customer profile</div>
+      <div class="modal-close" onclick="closeModal('edit-customer-modal')">✕</div>
+    </div>
+    <div class="modal-body">
+      <div class="job-context-block">
+        <div class="jcb-name" id="ecp-name">—</div>
+        <div class="jcb-sub" id="ecp-sub">—</div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><div class="form-label">Customer name</div><input class="form-input" id="ecp-cust-name" placeholder="Last, First"/></div>
+        <div class="form-group"><div class="form-label">Contact #</div><input class="form-input" id="ecp-contact" placeholder="604 555 1234" type="tel"/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><div class="form-label">Email</div><input class="form-input" id="ecp-email" type="email" placeholder="customer@email.com"/></div>
+        <div class="form-group"><div class="form-label">Vehicle</div><input class="form-input" id="ecp-vehicle" placeholder="2022 Honda Civic"/></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><div class="form-label">Plate #</div><input class="form-input" id="ecp-plate" placeholder="ABC1234" style="text-transform:uppercase"/></div>
+        <div class="form-group"><div class="form-label">WO # / Claim #</div><input class="form-input" id="ecp-wo" placeholder="WO-4420" readonly style="opacity:.6;cursor:not-allowed"/></div>
+      </div>
+      <div class="form-group"><div class="form-label">Notes (replaces existing)</div><textarea class="form-input" rows="3" style="resize:vertical" id="ecp-notes" placeholder="Full notes for this job…"></textarea></div>
+    </div>
+    <div class="modal-foot">
+      <div class="modal-hint">Updates both WIP and NJL records</div>
+      <button class="btn btn-ghost" onclick="closeModal('edit-customer-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveEditCustomer()">Save changes</button>
     </div>
   </div>
 </div>
@@ -984,9 +1020,9 @@ body.role-viewer #quick-bar{display:none!important}
         <div class="form-label">Courtesy car</div>
         <select class="form-input form-select" id="int-cc">
           <option value="">None</option>
-          <option>VJ785L</option><option>TX235X</option><option>NW391N</option><option>SB272H</option>
-          <option>LK854L</option><option>TN321R</option><option>VJ571K</option><option>SB252H</option>
-          <option>XP926R</option><option>TX225X</option><option>VN281J</option><option>Car Rental</option>
+          <option>VJ785L</option><option>TX235X</option><option>SB272H</option><option>LK853L</option>
+          <option>TN321R</option><option>SB252H</option><option>XP925R</option><option>XP926R</option>
+          <option>TX225X</option><option>VN281J</option><option>Car Rental</option>
         </select>
       </div>
       <div>
@@ -1238,25 +1274,24 @@ const JOBS = [
   {n:'Tremblay, Marie',v:'2019 Toyota RAV4',p:'KWX447',wo:'WO-4408',cl:'IC-2025-440027',st:'Parts ordered',out:'14-May-2026',cc:'TX235X',type:'ICBC',inD:'28-Apr-2026',body:'Nelson',paint:'Ami',email:'marie.t@gmail.com',phone:'6045550201'},
   {n:'Nguyen, Thi Thu',v:'2022 Hyundai Tucson',p:'NPL382',wo:'WO-4415',cl:'',st:'Scheduled',out:'06-May-2026',cc:'',type:'Private',inD:'06-May-2026',body:'David',paint:'Katty',email:'',phone:'6045550314'},
   {n:'Santos, Ricardo',v:'2020 Ford F-150',p:'KJB812',wo:'Private',cl:'',st:'Towed IN',out:'TBD',cc:'',type:'Private',inD:'03-May-2026',body:'—',paint:'—',email:'',phone:'7788815501'},
-  {n:'Chen, Wei',v:'2018 Mazda CX-5',p:'RTP559',wo:'WO-4401',cl:'IC-2025-438812',st:'Ready for pickup',out:'Today',cc:'NW391N',type:'ICBC',inD:'22-Apr-2026',body:'RC',paint:'Nelson',email:'w.chen99@hotmail.com',phone:'6045550892'},
+  {n:'Chen, Wei',v:'2018 Mazda CX-5',p:'RTP559',wo:'WO-4401',cl:'IC-2025-438812',st:'Ready for pickup',out:'Today',cc:'VJ785L',type:'ICBC',inD:'22-Apr-2026',body:'RC',paint:'Nelson',email:'w.chen99@hotmail.com',phone:'6045550892'},
   {n:'Brar, Jaspreet',v:'2023 Kia Sportage',p:'BXP201',wo:'WO-4399',cl:'IC-2025-437001',st:'On hold',out:'TBD',cc:'',type:'ICBC',inD:'18-Apr-2026',body:'Marco',paint:'Ammar',email:'jaspreet.b@outlook.com',phone:'7788816643'},
   {n:'Kim, Jinhyung',v:'2022 Tesla Model Y',p:'LKT921',wo:'WO-4416',cl:'IC-2025-441500',st:'Scheduled',out:'08-May-2026',cc:'SB272H',type:'ICBC',inD:'05-May-2026',body:'Johnny',paint:'RC',email:'',phone:'7788817721'},
   {n:'Okafor, Chidi',v:'2021 Subaru Outback',p:'BPN773',wo:'WO-4418',cl:'IC-2025-442001',st:'Towed IN',out:'TBD',cc:'',type:'ICBC',inD:'07-May-2026',body:'—',paint:'—',email:'cokafor@gmail.com',phone:'6045551122'},
   {n:'Petrov, Alexei',v:'2020 BMW 330i',p:'JVQ412',wo:'WO-4403',cl:'',st:'In Progress',out:'10-May-2026',cc:'TN321R',type:'Private',inD:'26-Apr-2026',body:'David',paint:'Ami',email:'alex.petrov@gmail.com',phone:'7788813300'},
-  {n:'Lee, So-Yeon',v:'2019 Hyundai Elantra',p:'SXM221',wo:'WO-4406',cl:'IC-2025-439450',st:'Parts arrived',out:'12-May-2026',cc:'VJ571K',type:'ICBC',inD:'29-Apr-2026',body:'Aashi',paint:'Nelson',email:'soyeon.l@gmail.com',phone:'6045559988'},
+  {n:'Lee, So-Yeon',v:'2019 Hyundai Elantra',p:'SXM221',wo:'WO-4406',cl:'IC-2025-439450',st:'Parts arrived',out:'12-May-2026',cc:'TX235X',type:'ICBC',inD:'29-Apr-2026',body:'Aashi',paint:'Nelson',email:'soyeon.l@gmail.com',phone:'6045559988'},
 ];
 
 const FLEET = [
   {plate:'VN281J',stat:'avail',cust:null,days:null},
   {plate:'TX225X',stat:'avail',cust:null,days:null},
   {plate:'SB252H',stat:'avail',cust:null,days:null},
-  {plate:'LK854L',stat:'avail',cust:null,days:null},
+  {plate:'LK853L',stat:'avail',cust:null,days:null},
   {plate:'VJ785L',stat:'inuse',cust:'Park, Sunwoo',days:'Day 3 of ~8'},
   {plate:'TX235X',stat:'inuse',cust:'Tremblay, Marie',days:'Day 6 of ~16'},
-  {plate:'NW391N',stat:'inuse',cust:'Chen, Wei',days:'Day 12 — ready today!'},
   {plate:'TN321R',stat:'inuse',cust:'Petrov, Alexei',days:'Day 7 of ~14'},
   {plate:'SB272H',stat:'inuse',cust:'Kim, Jinhyung',days:'Day 1'},
-  {plate:'VJ571K',stat:'inuse',cust:'Lee, So-Yeon',days:'Day 4 of ~13'},
+  {plate:'XP925R',stat:'inuse',cust:'Lee, So-Yeon',days:'Day 4 of ~13'},
   {plate:'XP926R',stat:'wait',cust:'Brar, Jaspreet (pending)',days:'Waiting for job approval'},
 ];
 
@@ -1269,7 +1304,7 @@ const TECHS = [
 const PARTS = []; // populated from live sheet — see loadPartsReturn()
 
 const NOTIFS = [
-  {type:'warn',msg:'Chen, Wei — Ready for Pickup, courtesy car NW391N still assigned',time:'Today 9:14 AM'},
+  {type:'warn',msg:'Park, Sunwoo — Ready for Pickup, courtesy car VJ785L still assigned',time:'Today 9:14 AM'},
   {type:'info',msg:'Lee, So-Yeon — Parts arrived, schedule repair date',time:'Today 8:30 AM'},
   {type:'warn',msg:'Kim, Jinhyung — No Show flagged, follow-up needed',time:'Yesterday 3:45 PM'},
 ];
@@ -1354,18 +1389,97 @@ document.addEventListener('keydown', e=>{
   if(e.key==='Escape') document.querySelectorAll('.modal-overlay.open').forEach(m=>m.classList.remove('open'));
 });
 
-function openUpdateModal(job){
+async function openUpdateModal(job){
   if(job){
+    _selectedJob = job; // ensure _selectedJob is always set when modal opens from row click
     document.getElementById('upd-name').textContent = job.n;
     document.getElementById('upd-sub').textContent = `${job.wo} · ${job.v} · ${job.p}`;
     document.getElementById('upd-email').value = job.email||'';
     document.getElementById('upd-current-status').className = `pill ${PILL_CLASS[job.st]||'s-hold'}`;
     document.getElementById('upd-current-status').textContent = job.st;
+    // Pre-fill fields from local job object first (instant)
+    document.getElementById('upd-status').value = '';
+    document.getElementById('upd-notes').value = '';
+    document.getElementById('upd-parts-cb').checked = false;
+    const outEl = document.getElementById('upd-out');
+    const schedEl = document.getElementById('upd-sched');
+    if(outEl && job.out && job.out !== 'TBD') outEl.valueAsDate = parseJobDate(job.out);
+    else if(outEl) outEl.value = '';
+    if(schedEl && job.schedDate) schedEl.valueAsDate = parseJobDate(job.schedDate);
+    else if(schedEl) schedEl.value = '';
+    document.getElementById('upd-payment').value = job.payment || '';
+    document.getElementById('upd-cc').value = job.cc || '';
+    document.getElementById('upd-bhrs').value = job.b || '';
+    document.getElementById('upd-phrs').value = job.pHrs || '';
+    // Pre-select body/paint techs from local data
+    _setTechPicker('upd-body-picker', job.body);
+    _setTechPicker('upd-paint-picker', job.paint);
+    openModal('update-modal');
+    // Then fetch latest from sheet in background and update fields
+    if(job.rowIndex && job.source){
+      try {
+        const live = await apiFetch('getJobRow', {rowIndex: job.rowIndex, source: job.source});
+        if(live && live.ok && live.job){
+          const j = live.job;
+          // Update displayed status pill to live value
+          const liveSt = j.status || j.stage || job.st;
+          document.getElementById('upd-current-status').className = `pill ${PILL_CLASS[liveSt]||'s-hold'}`;
+          document.getElementById('upd-current-status').textContent = liveSt;
+          document.getElementById('upd-email').value = j.email || job.email || '';
+          document.getElementById('upd-payment').value = j.payment || job.payment || '';
+          const liveCC = j.cc || job.cc || '';
+          document.getElementById('upd-cc').value = liveCC;
+          document.getElementById('upd-bhrs').value = j.b || job.b || '';
+          document.getElementById('upd-phrs').value = j.p || job.pHrs || '';
+          if(outEl && j.outDate) outEl.valueAsDate = parseJobDate(j.outDate);
+          if(schedEl && j.schedDate) schedEl.valueAsDate = parseJobDate(j.schedDate);
+          if(j.bodyTech) _setTechPicker('upd-body-picker', j.bodyTech);
+          if(j.paintTech) _setTechPicker('upd-paint-picker', j.paintTech);
+          // Merge live data back into _selectedJob so saveUpdate has fresh rowIndex
+          Object.assign(_selectedJob, {
+            st: liveSt, email: j.email||_selectedJob.email,
+            payment: j.payment||_selectedJob.payment, cc: j.cc||_selectedJob.cc,
+            b: j.b||_selectedJob.b, pHrs: j.p||_selectedJob.pHrs,
+            body: j.bodyTech||_selectedJob.body, paint: j.paintTech||_selectedJob.paint,
+            notes: j.notes||_selectedJob.notes,
+          });
+        }
+      } catch(e){ console.warn('getJobRow fetch error:', e); }
+    }
+  } else {
+    openModal('update-modal');
   }
-  openModal('update-modal');
 }
+
+function _setTechPicker(pickerId, techName){
+  if(!techName) return;
+  const picker = document.getElementById(pickerId);
+  if(!picker) return;
+  picker.querySelectorAll('.tech-btn').forEach(b=>{
+    if(b.textContent.trim() === techName) b.classList.add('active');
+    else b.classList.remove('active');
+  });
+}
+
 function openIntakeModal(){
   document.getElementById('int-in').value = new Date().toISOString().split('T')[0];
+  // Reset CC to blank (no default selection)
+  const ccEl = document.getElementById('int-cc');
+  if(ccEl) ccEl.value = '';
+  // Reset tech pickers (no default active)
+  document.querySelectorAll('#int-body-picker .tech-btn, #int-paint-picker .tech-btn').forEach(b=>b.classList.remove('active'));
+  // Clear all text fields
+  ['int-wo','int-claim','int-name','int-phone','int-vehicle','int-plate','int-email','int-notes'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.value = '';
+  });
+  ['int-bhrs','int-phrs'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.value = '';
+  });
+  document.getElementById('int-sched').value = '';
+  // Reset type to ICBC
+  pickSeg(document.querySelector('#intake-type .seg-opt'), 'intake-type');
   openModal('intake-modal');
 }
 
@@ -1968,6 +2082,63 @@ async function apiUpdateStatus(rowIndex, customerName, newStatus, extras={}){
     } else {
       toast(res?.error || 'Update failed — check Apps Script logs', 'error');
     }
+  } finally {
+    showLoadingBar(false);
+  }
+}
+
+/* ════════════════════════════════════════════════════
+   EDIT CUSTOMER PROFILE
+════════════════════════════════════════════════════ */
+function openEditCustomerFromUpdate(){
+  const job = _selectedJob;
+  if(!job){ toast('No job selected','warn'); return; }
+  closeModal('update-modal');
+  openEditCustomer(job);
+}
+
+function openEditCustomer(job){
+  if(!job) return;
+  _selectedJob = job;
+  document.getElementById('ecp-name').textContent = job.n;
+  document.getElementById('ecp-sub').textContent = `${job.wo} · ${job.v} · ${job.p}`;
+  document.getElementById('ecp-cust-name').value = job.n || '';
+  document.getElementById('ecp-contact').value   = job.phone || '';
+  document.getElementById('ecp-email').value     = job.email || '';
+  document.getElementById('ecp-vehicle').value   = job.v || '';
+  document.getElementById('ecp-plate').value     = job.p || '';
+  document.getElementById('ecp-wo').value        = job.wo || '';
+  document.getElementById('ecp-notes').value     = job.notes || '';
+  openModal('edit-customer-modal');
+}
+
+async function saveEditCustomer(){
+  const job = _selectedJob;
+  if(!job || !job.rowIndex){ toast('Cannot save — no row index. Refresh and try again.','warn'); return; }
+  const name    = document.getElementById('ecp-cust-name').value.trim();
+  if(!name){ toast('Customer name is required','warn'); return; }
+  const payload = {
+    rowIndex: job.rowIndex,
+    source:   job.source || 'WIP',
+    name:     name,
+    contact:  document.getElementById('ecp-contact').value.trim(),
+    email:    document.getElementById('ecp-email').value.trim(),
+    vehicle:  document.getElementById('ecp-vehicle').value.trim(),
+    plate:    document.getElementById('ecp-plate').value.trim().toUpperCase(),
+    notes:    document.getElementById('ecp-notes').value.trim(),
+  };
+  showLoadingBar(true);
+  try {
+    const res = await apiFetch('editCustomer', payload);
+    if(res && res.ok){
+      toast(`${name} — profile updated`, 'success');
+      closeModal('edit-customer-modal');
+      await loadLiveData(false);
+    } else {
+      toast(res?.error || 'Edit failed — check Apps Script logs', 'error');
+    }
+  } catch(e){
+    toast('Network error — could not save','error');
   } finally {
     showLoadingBar(false);
   }
