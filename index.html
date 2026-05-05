@@ -737,10 +737,10 @@ body.role-viewer #quick-bar{display:none!important}
   </div>
 
   <div class="fleet-stats">
-    <div class="fleet-stat"><div class="fleet-stat-n" style="color:var(--grn)">4</div><div class="fleet-stat-l">Available</div></div>
-    <div class="fleet-stat"><div class="fleet-stat-n" style="color:var(--amb)">7</div><div class="fleet-stat-l">In use</div></div>
-    <div class="fleet-stat"><div class="fleet-stat-n" style="color:var(--red)">1</div><div class="fleet-stat-l">Awaiting car</div></div>
-    <div class="fleet-stat"><div class="fleet-stat-n" style="color:var(--mut)">11</div><div class="fleet-stat-l">Total fleet</div></div>
+    <div class="fleet-stat"><div class="fleet-stat-n" id="fleet-n-avail" style="color:var(--grn)">—</div><div class="fleet-stat-l">Available</div></div>
+    <div class="fleet-stat"><div class="fleet-stat-n" id="fleet-n-inuse" style="color:var(--amb)">—</div><div class="fleet-stat-l">In use</div></div>
+    <div class="fleet-stat"><div class="fleet-stat-n" style="color:var(--red)" id="fleet-n-wait">—</div><div class="fleet-stat-l">Awaiting car</div></div>
+    <div class="fleet-stat"><div class="fleet-stat-n" id="fleet-n-total" style="color:var(--mut)">—</div><div class="fleet-stat-l">Total fleet</div></div>
   </div>
 
   <div class="fleet-grid" id="fleet-grid"></div>
@@ -1955,13 +1955,17 @@ function applyLiveCCStatus(ccStatus, ccInUse){
   // ccStatus: { plate: {active, name, vehicle, status, inDate, wo} }
   const avail = Object.values(ccStatus).filter(c=>!c.active).length;
   const inUse = Object.values(ccStatus).filter(c=> c.active).length;
+  const total = Object.keys(ccStatus).length;
 
-  // Update fleet summary numbers
-  document.querySelectorAll('.fleet-stat-n').forEach((el,i)=>{
-    if(i===0) el.textContent = avail;
-    if(i===1) el.textContent = inUse;
-    if(i===3) el.textContent = Object.keys(ccStatus).length;
-  });
+  // Update fleet page stat numbers by ID (reliable — no index guessing)
+  const nAvail = document.getElementById('fleet-n-avail');
+  const nInUse = document.getElementById('fleet-n-inuse');
+  const nTotal = document.getElementById('fleet-n-total');
+  if(nAvail) nAvail.textContent = avail;
+  if(nInUse) nInUse.textContent = inUse;
+  if(nTotal) nTotal.textContent = total;
+
+  // Nav badge
   const navBadge = document.getElementById('nav-cars-avail');
   if(navBadge) navBadge.textContent = avail;
 
@@ -1969,7 +1973,7 @@ function applyLiveCCStatus(ccStatus, ccInUse){
   const ccNums = document.querySelectorAll('.cc-num');
   if(ccNums[0]) ccNums[0].textContent = avail;
   if(ccNums[1]) ccNums[1].textContent = inUse;
-  if(ccNums[2]) ccNums[2].textContent = Object.keys(ccStatus).length;
+  if(ccNums[2]) ccNums[2].textContent = total;
 
   // Rebuild fleet cards with live data
   FLEET.length = 0;
