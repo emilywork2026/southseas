@@ -10,22 +10,21 @@
 /* ── RESET & TOKENS ─────────────────────────────── */
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  /* Warm dark — less blue, easier on eyes at night */
-  --bg:#12110f;
-  --surf:#1c1a17;
-  --card:#242118;
-  --bdr:#33302a;
-  --bdr2:#46422e;
-  --acc:#e07b2a;
-  --acc2:#f5a84a;
-  --blu:#5b9bd5;
-  --grn:#3dba6f;
-  --amb:#d4a017;
-  --red:#d95555;
-  --pur:#9070d4;
-  --tx:#ede9e0;
-  --mut:#9a9383;
-  --hint:#5a5448;
+  --bg:#0f1117;
+  --surf:#181c26;
+  --card:#1e2330;
+  --bdr:#2a3048;
+  --bdr2:#363d58;
+  --acc:#e85d26;
+  --acc2:#f5963d;
+  --blu:#3b82f6;
+  --grn:#22c55e;
+  --amb:#f59e0b;
+  --red:#ef4444;
+  --pur:#8b5cf6;
+  --tx:#e8eaf0;
+  --mut:#8891a8;
+  --hint:#4d5670;
   --r:8px;
   --rl:12px;
   --rx:16px;
@@ -34,51 +33,11 @@
 }
 html,body{height:100%;background:var(--bg);color:var(--tx);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased}
 
-/* ── SHELL LAYOUT — desktop ─────────────────────── */
+/* ── SHELL LAYOUT ───────────────────────────────── */
 #app{display:grid;grid-template-rows:52px 1fr;grid-template-columns:204px 1fr;height:100vh;overflow:hidden}
 #topbar{grid-column:1/-1;background:var(--surf);border-bottom:1px solid var(--bdr);display:flex;align-items:center;z-index:20}
 #sidebar{background:var(--surf);border-right:1px solid var(--bdr);display:flex;flex-direction:column;overflow-y:auto;z-index:10}
 #main{overflow-y:auto;overflow-x:hidden;background:var(--bg);padding:20px;display:flex;flex-direction:column;gap:0}
-
-/* ── MOBILE LAYOUT ──────────────────────────────── */
-@media(max-width:768px){
-  #app{grid-template-rows:48px 1fr 56px;grid-template-columns:1fr;height:100dvh;height:100vh}
-  #topbar{grid-column:1;padding:0 12px}
-  #sidebar{display:none}
-  #main{padding:12px;padding-bottom:0;grid-row:2}
-  /* Bottom nav bar */
-  #mobile-nav{
-    display:flex;grid-row:3;grid-column:1;
-    background:var(--surf);border-top:1px solid var(--bdr);
-    align-items:stretch;z-index:20;
-  }
-  .mn-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
-    gap:3px;padding:6px 4px;cursor:pointer;color:var(--mut);font-size:9px;
-    border-top:2px solid transparent;transition:all .12s;-webkit-tap-highlight-color:transparent}
-  .mn-item.active{color:var(--acc);border-top-color:var(--acc)}
-  .mn-item svg{width:18px;height:18px;stroke-width:1.8}
-  /* Collapse topbar on mobile */
-  .logo-zone{width:auto;border-right:none;padding:0}
-  .search-wrap{max-width:none}
-  .tb-right .tb-chip:not(#notif-chip):not(#refresh-chip){display:none}
-  .user-av{display:none}
-  /* Simplify main content spacing */
-  .stat-grid{grid-template-columns:repeat(2,1fr);gap:8px}
-  .two-col{grid-template-columns:1fr;gap:10px}
-  .right-stack{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  .job-table{font-size:11px}
-  .job-table th:nth-child(n+5),.job-table td:nth-child(n+5){display:none}
-  /* Modals full-screen on mobile */
-  .modal{width:100vw!important;max-width:100vw!important;max-height:90dvh;max-height:90vh;border-radius:var(--rl) var(--rl) 0 0;position:fixed;bottom:0;left:0;margin:0}
-  .modal-overlay{align-items:flex-end}
-  /* Fleet grid 2-col on mobile */
-  .fleet-grid{grid-template-columns:repeat(2,1fr)!important}
-  /* Parts table simplify */
-  .parts-table th:nth-child(n+5),.parts-table td:nth-child(n+5){display:none}
-}
-@media(min-width:769px){
-  #mobile-nav{display:none}
-}
 
 /* ── TOPBAR ─────────────────────────────────────── */
 .logo-zone{width:204px;display:flex;align-items:center;gap:10px;padding:0 16px;border-right:1px solid var(--bdr);height:100%;flex-shrink:0}
@@ -186,6 +145,12 @@ html,body{height:100%;background:var(--bg);color:var(--tx);font-size:13px;line-h
 .s-refix{background:rgba(239,68,68,.15);color:#fca5a5}
 .s-noshow{background:rgba(245,158,11,.18);color:#fde68a}
 .s-est{background:rgba(99,102,241,.15);color:#a5b4fc}
+.s-approved{background:rgba(34,197,94,.15);color:#6ee7b7}
+.s-done{background:rgba(100,100,100,.18);color:#9ca3af}
+.s-cancel{background:rgba(239,68,68,.12);color:#f87171}
+/* Optgroup styling in filter dropdowns */
+optgroup{color:var(--mut);font-size:10px;font-style:normal;font-weight:600;text-transform:uppercase;letter-spacing:.3px}
+optgroup option{color:var(--tx);font-size:11.5px;font-weight:400;text-transform:none;letter-spacing:0}
 
 /* ── FILTER BAR ─────────────────────────────────── */
 .filter-bar{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--bdr);flex-wrap:wrap}
@@ -674,11 +639,28 @@ body.role-viewer #quick-bar{display:none!important}
       <input id="f-query" placeholder="Name · WO# · plate · claim" style="width:170px" oninput="filterJobs()"/>
       <select id="f-status" onchange="filterJobs()">
         <option value="">All statuses</option>
-        <option>Towed IN</option><option>Estimate/Photo</option><option>Estimate Pending Review</option>
-        <option>Estimate Approved</option><option>WIP</option><option>In Progress</option>
-        <option>Parts ordered</option><option>Parts arrived</option><option>Scheduled</option>
-        <option>Ready for pickup</option><option>On hold</option><option>Refix</option>
-        <option>No show</option><option>Cancelled</option><option>Total Loss</option>
+        <optgroup label="── Active ──">
+          <option value="new_intake">New Intake (1 –)</option>
+          <option value="towed">Towed IN</option>
+          <option value="estimate">Estimate / Photo</option>
+          <option value="est_sent">Estimate Sent (2 –)</option>
+          <option value="est_approved">Estimate Approved (3 –)</option>
+          <option value="parts_ordered">Parts Ordered (4 –)</option>
+          <option value="parts_arrived">Parts Arrived (5 –)</option>
+          <option value="scheduled">Scheduled (6 –)</option>
+          <option value="wip">WIP / In Progress</option>
+          <option value="outstanding">Outstanding Balance</option>
+          <option value="refix">Refix / Comeback</option>
+          <option value="no_show">No Show</option>
+          <option value="on_hold">On Hold</option>
+          <option value="ready">Ready for Pickup</option>
+        </optgroup>
+        <optgroup label="── Closed ──">
+          <option value="picked_up">Picked Up</option>
+          <option value="cancelled">Cancelled</option>
+          <option value="total_loss">Total Loss</option>
+          <option value="shop_change">Shop Change</option>
+        </optgroup>
       </select>
       <select id="f-type" onchange="filterJobs()">
         <option value="">All types</option>
@@ -834,31 +816,6 @@ body.role-viewer #quick-bar{display:none!important}
 </div>
 
 </div><!-- /main -->
-
-<!-- ═══════════════ MOBILE BOTTOM NAV ═════════════ -->
-<nav id="mobile-nav">
-  <div class="mn-item active" data-page="dashboard" onclick="navTo('dashboard',this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-    Home
-  </div>
-  <div class="mn-item" data-page="search" onclick="navTo('search',this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-    Search
-  </div>
-  <div class="mn-item" data-page="schedule" onclick="navTo('schedule',this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-    Schedule
-  </div>
-  <div class="mn-item" data-page="cars" onclick="navTo('cars',this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v5a2 2 0 0 1-2 2h-2"/><circle cx="8.5" cy="17" r="2"/><circle cx="17.5" cy="17" r="2"/></svg>
-    Cars
-  </div>
-  <div class="mn-item" data-page="parts" onclick="navTo('parts',this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
-    Parts
-  </div>
-</nav>
-
 </div><!-- /app -->
 
 <!-- ═══════════════════════════════ MODALS ════════════════════════════════ -->
@@ -1320,15 +1277,32 @@ window.addEventListener('load',()=>{
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzoeiWcCMKCAVsxIx9JvQAST_ZnaZWu1Yl1Uxt8ZM6DswFjvx0JpBRA9MudsAku_qoRTQ/exec';
 
 const PILL_CLASS = {
+  // WIP statuses — exact sheet values
   'WIP':'s-wip','In Progress':'s-inprog','In progress':'s-inprog',
   'Ready for pickup':'s-ready','Ready for Pickup':'s-ready',
-  'Parts ordered':'s-parts','Parts arrived':'s-parts','Ordered Parts':'s-parts','Order Parts':'s-parts',
+  'Parts arrived':'s-parts','Parts Arrived':'s-parts',
+  'Ordered Parts':'s-parts','Order Parts':'s-parts','Parts ordered':'s-parts',
   'Scheduled':'s-sched','Schedule':'s-sched',
-  'Towed IN':'s-towed',
-  'On hold':'s-hold','Outstanding Balance':'s-hold','Shop Change Request':'s-hold',
-  'Refix':'s-refix','Cancelled':'s-refix','Total Loss':'s-refix',
+  'Towed IN':'s-towed','Towed In':'s-towed',
+  'Outstanding Balance':'s-hold','On hold':'s-hold','On Hold':'s-hold',
+  'Shop Change Request':'s-hold',
+  'Refix':'s-refix','Cancelled':'s-cancel','Total Loss':'s-cancel',
   'No show':'s-noshow','No Show':'s-noshow',
-  'Estimate/Photo':'s-est','Estimate Pending Review':'s-est','Estimate Approved':'s-est',
+  'Estimate/Photo':'s-est','Estimate Pending Review':'s-est',
+  'Estimate Approved':'s-approved',
+  'Picked up':'s-done','Picked Up':'s-done',
+  // NJL stage strings
+  '1 – New Intake':'s-towed',
+  '2 – Estimate Sent':'s-est',
+  '3 – Estimate Approved':'s-approved',
+  '4 – Parts Ordered':'s-parts',
+  '5 – Parts Arrived':'s-parts',
+  '6 – Scheduled':'s-sched',
+  '9 – Picked Up / Closed':'s-done',
+  'On Hold':'s-hold',
+  'Cancelled':'s-cancel',
+  'Total Loss':'s-cancel',
+  'Shop Change':'s-hold',
 };
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -1441,7 +1415,28 @@ function parseJobDate(s) {
   return null;
 }
 function makePill(st){
-  const cls = PILL_CLASS[st]||'s-hold';
+  if(!st) return `<span class="pill s-hold">—</span>`;
+  // Direct lookup first
+  if(PILL_CLASS[st]) return `<span class="pill ${PILL_CLASS[st]}">${st}</span>`;
+  // Fuzzy fallback for NJL stage strings and status variants not in PILL_CLASS
+  const sl = st.toLowerCase();
+  let cls = 's-hold';
+  if(sl.includes('picked up')||sl.includes('9 –')||sl.includes('closed')) cls='s-done';
+  else if(sl.includes('cancel')||sl.includes('total loss'))               cls='s-cancel';
+  else if(sl.includes('6 –')||sl.includes('schedul'))                     cls='s-sched';
+  else if(sl.includes('5 –')||sl.includes('parts arrived'))               cls='s-parts';
+  else if(sl.includes('4 –')||sl.includes('order'))                       cls='s-parts';
+  else if(sl.includes('3 –')||sl.includes('approved'))                    cls='s-approved';
+  else if(sl.includes('2 –')||sl.includes('estimate sent')||sl.includes('pending')) cls='s-est';
+  else if(sl.includes('1 –')||sl.includes('new intake'))                  cls='s-towed';
+  else if(sl.includes('wip')||sl.includes('in progress'))                 cls='s-wip';
+  else if(sl.includes('towed'))                                           cls='s-towed';
+  else if(sl.includes('estimate')||sl.includes('photo'))                  cls='s-est';
+  else if(sl.includes('refix'))                                           cls='s-refix';
+  else if(sl.includes('no show'))                                         cls='s-noshow';
+  else if(sl.includes('outstanding')||sl.includes('balance'))             cls='s-hold';
+  else if(sl.includes('ready'))                                           cls='s-ready';
+  else if(sl.includes('parts'))                                           cls='s-parts';
   return `<span class="pill ${cls}">${st}</span>`;
 }
 function makePlate(p){
@@ -1461,14 +1456,9 @@ function fmtDate(d){
 function navTo(pageId, triggerEl){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('page-'+pageId).classList.add('active');
-  // Sync sidebar nav
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   const navEl = triggerEl || document.querySelector(`.nav-item[data-page="${pageId}"]`);
-  if(navEl && navEl.classList.contains('nav-item')) navEl.classList.add('active');
-  // Sync mobile bottom nav
-  document.querySelectorAll('#mobile-nav .mn-item').forEach(n=>n.classList.remove('active'));
-  const mobileEl = document.querySelector(`#mobile-nav .mn-item[data-page="${pageId}"]`);
-  if(mobileEl) mobileEl.classList.add('active');
+  if(navEl) navEl.classList.add('active');
 }
 
 document.querySelectorAll('.nav-item').forEach(item=>{
@@ -1647,38 +1637,10 @@ function renderMiniCars(){
 
 /* ── RENDER: UPCOMING MINI ──────────────────────── */
 function renderUpcomingMini(){
-  // Build from live JOBS, sorted by sched/inD date
-  const now = nowVancouver();
-  const cutoff = new Date(now.getTime() + 45 * 86400000);
-  const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-
-  const upcoming = JOBS.filter(j=>{
-    const sl = (j.st||'').toLowerCase();
-    if(sl.includes('picked up')||sl.includes('cancel')||sl.includes('total loss')) return false;
-    if(j.source==='Archive'||j.source==='Cancelled') return false;
-    // Use schedDate (NJL sched col) or inD (WIP IN col) as the "IN" date
-    const d = parseJobDate(j.schedDate) || parseJobDate(j.inD);
-    if(!d||isNaN(d.getTime())) return false;
-    return d >= now && d <= cutoff;
-  }).sort((a,b)=>{
-    const da = parseJobDate(a.schedDate)||parseJobDate(a.inD)||new Date(9e15);
-    const db = parseJobDate(b.schedDate)||parseJobDate(b.inD)||new Date(9e15);
-    return da-db;
-  }).slice(0,3);
-
-  if(!upcoming.length){
-    document.getElementById('upcoming-mini').innerHTML =
-      '<div style="padding:12px 0;text-align:center;color:var(--hint);font-size:12px">No upcoming jobs</div>';
-    return;
-  }
-
-  document.getElementById('upcoming-mini').innerHTML = upcoming.map(u=>{
-    // Show IN date (schedDate first, then inD) — NOT the out/completion date
-    const d = parseJobDate(u.schedDate) || parseJobDate(u.inD);
-    const day = d ? String(d.getDate()).padStart(2,'0') : '--';
-    const mon = d ? MON[d.getMonth()] : '---';
-    return `<div class="upcoming-item" onclick="openUpdateModalByJob(${JOBS.indexOf(u)})" style="cursor:pointer">
-      <div class="upcoming-date-box"><div class="udb-day">${day}</div><div class="udb-mon">${mon}</div></div>
+  document.getElementById('upcoming-mini').innerHTML = UPCOMING.slice(0,3).map(u=>{
+    const [d,m] = u.dt.split('-');
+    return `<div class="upcoming-item">
+      <div class="upcoming-date-box"><div class="udb-day">${d}</div><div class="udb-mon">${m}</div></div>
       <div class="upcoming-info">
         <div class="upcoming-name">${u.n}</div>
         <div class="upcoming-veh">${u.v}</div>
@@ -1693,17 +1655,101 @@ let filteredJobs = [...JOBS];
 let selectedRow = null;
 
 function filterJobs(){
-  const q    = (document.getElementById('f-query').value||'').toLowerCase();
+  const q    = (document.getElementById('f-query').value||'').toLowerCase().trim();
   const st   = document.getElementById('f-status').value;
   const type = document.getElementById('f-type').value;
   const ph   = (document.getElementById('f-phone').value||'').trim();
+  const from = document.getElementById('f-from').value;
+  const to   = document.getElementById('f-to').value;
 
   filteredJobs = JOBS.filter(j=>{
-    const qm  = !q  || (j.n+j.wo+j.p+j.cl).toLowerCase().includes(q);
-    const sm  = !st || j.st === st;
-    const tm  = !type || j.type === type;
-    const phm = !ph || j.phone.endsWith(ph);
-    return qm && sm && tm && phm;
+    // Text search across name, WO, plate, claim, vehicle, notes
+    if(q && !(j.n+j.wo+j.p+j.cl+(j.v||'')+(j.notes||'')).toLowerCase().includes(q)) return false;
+    // Type
+    if(type && j.type !== type) return false;
+    // Phone last-4
+    if(ph && !(j.phone||'').endsWith(ph)) return false;
+    // Date range on IN date
+    if(from || to){
+      const d = parseJobDate(j.inD);
+      if(d){
+        const iso = d.toISOString().slice(0,10);
+        if(from && iso < from) return false;
+        if(to   && iso > to)   return false;
+      }
+    }
+    // Status group matching — covers both WIP status strings and NJL stage strings
+    if(st){
+      const s = (j.st||'').toLowerCase();
+      switch(st){
+        case 'new_intake':
+          // NJL stage "1 – New Intake" and WIP "Estimate/Photo", "Towed IN" new arrivals without WO
+          if(!s.includes('new intake') && !s.includes('1 –') &&
+             !s.includes('1–')) return false;
+          break;
+        case 'towed':
+          if(!s.includes('towed')) return false;
+          break;
+        case 'estimate':
+          // Estimate/Photo, Estimate Pending Review — but NOT Estimate Approved
+          if(!s.includes('estimate') && !s.includes('photo')) return false;
+          if(s.includes('approved')) return false;
+          break;
+        case 'est_sent':
+          if(!s.includes('2 –') && !s.includes('2–') &&
+             !s.includes('estimate sent') && !s.includes('pending review') &&
+             !s.includes('pending')) return false;
+          break;
+        case 'est_approved':
+          if(!s.includes('approved') && !s.includes('3 –') && !s.includes('3–')) return false;
+          break;
+        case 'parts_ordered':
+          if(!s.includes('order') && !s.includes('4 –') && !s.includes('4–')) return false;
+          if(s.includes('arrived')) return false;
+          break;
+        case 'parts_arrived':
+          if(!s.includes('arrived') && !s.includes('5 –') && !s.includes('5–')) return false;
+          break;
+        case 'scheduled':
+          if(!s.includes('schedule') && !s.includes('6 –') && !s.includes('6–')) return false;
+          break;
+        case 'wip':
+          if(!s.includes('wip') && !s.includes('in progress')) return false;
+          break;
+        case 'outstanding':
+          if(!s.includes('outstanding') && !s.includes('balance') &&
+             !s.includes('ready for pickup')) return false;
+          break;
+        case 'refix':
+          if(!s.includes('refix') && !s.includes('comeback')) return false;
+          break;
+        case 'no_show':
+          if(!s.includes('no show')) return false;
+          break;
+        case 'on_hold':
+          if(!s.includes('on hold') && !s.includes('hold')) return false;
+          break;
+        case 'ready':
+          if(!s.includes('ready for pickup')) return false;
+          break;
+        case 'picked_up':
+          if(!s.includes('picked up') && !s.includes('9 –') && !s.includes('9–')) return false;
+          break;
+        case 'cancelled':
+          if(!s.includes('cancel')) return false;
+          break;
+        case 'total_loss':
+          if(!s.includes('total loss')) return false;
+          break;
+        case 'shop_change':
+          if(!s.includes('shop change')) return false;
+          break;
+        default:
+          // Fallback: exact match for any unrecognised value
+          if(j.st !== st) return false;
+      }
+    }
+    return true;
   });
   renderSearchJobs();
 }
@@ -1791,41 +1837,16 @@ document.getElementById('cal-next').onclick = ()=>{ if(calMonth===11){calMonth=0
 
 /* ── RENDER: UPCOMING TABLE ─────────────────────── */
 function renderUpcomingTable(){
-  const now = nowVancouver();
-  const cutoff = new Date(now.getTime() + 60 * 86400000);
-
-  const upcoming = JOBS.filter(j=>{
-    const sl = (j.st||'').toLowerCase();
-    if(sl.includes('picked up')||sl.includes('cancel')||sl.includes('total loss')) return false;
-    if(j.source==='Archive'||j.source==='Cancelled') return false;
-    // Use schedDate or inD as the "scheduled IN" date
-    const d = parseJobDate(j.schedDate) || parseJobDate(j.inD);
-    if(!d||isNaN(d.getTime())) return false;
-    return d >= now && d <= cutoff;
-  }).sort((a,b)=>{
-    const da = parseJobDate(a.schedDate)||parseJobDate(a.inD)||new Date(9e15);
-    const db = parseJobDate(b.schedDate)||parseJobDate(b.inD)||new Date(9e15);
-    return da-db;
-  });
-
-  if(!upcoming.length){
-    document.getElementById('upcoming-tbody').innerHTML =
-      `<tr><td colspan="6" style="padding:20px;text-align:center;color:var(--hint);font-size:12px">No upcoming jobs in the next 60 days</td></tr>`;
-    return;
-  }
-
-  document.getElementById('upcoming-tbody').innerHTML = upcoming.map(u=>{
-    // Show IN date (schedDate or inD) in the date column
-    const inDateStr = u.schedDate || u.inD || '';
-    return `<tr onclick="openUpdateModalByJob(${JOBS.indexOf(u)})" style="cursor:pointer">
-      <td class="mono">${inDateStr}</td>
+  document.getElementById('upcoming-tbody').innerHTML = UPCOMING.map(u=>`
+    <tr>
+      <td class="mono">${u.dt}</td>
       <td><div class="j-name">${u.n}</div></td>
       <td style="font-size:11px;color:var(--mut)">${u.v}</td>
       <td>${makeTag(u.type)}</td>
       <td style="font-size:11px;color:var(--mut)">${u.body}</td>
       <td>${fmtDate(u.out)}</td>
-    </tr>`;
-  }).join('');
+    </tr>
+  `).join('');
 }
 
 /* ── RENDER: FLEET ──────────────────────────────── */
@@ -1929,66 +1950,18 @@ function renderParts(){
 
 /* ── RENDER: NOTIFICATIONS ──────────────────────── */
 function renderNotifs(){
-  document.getElementById('notif-list').innerHTML = NOTIFS.length ? NOTIFS.map((n,i)=>`
-    <div class="alert ${n.type==='warn'?'alert-warn':'alert-info'}" style="margin-bottom:8px;cursor:${n.jobIdx!==undefined?'pointer':'default'}"
-         onclick="${n.jobIdx!==undefined?`closeModal('notif-modal');openUpdateModalByJob(${n.jobIdx})`:''}">
-      <svg viewBox="0 0 24 24" fill="${n.type==='warn'?'var(--red)':'none'}" stroke="${n.type==='warn'?'none':'var(--blu)'}" stroke-width="2" width="13" height="13">
+  document.getElementById('notif-list').innerHTML = NOTIFS.map(n=>`
+    <div class="alert ${n.type==='warn'?'alert-warn':'alert-info'}" style="margin-bottom:8px">
+      <svg viewBox="0 0 24 24" fill="${n.type==='warn'?'var(--red)':'none'}" stroke="${n.type==='warn'?'none':'#93c5fd'}" stroke-width="2" width="13" height="13">
         ${n.type==='warn'?'<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>':'<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>'}
       </svg>
-      <div style="flex:1;min-width:0">
-        <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${n.msg}</div>
-        <div style="font-size:10px;opacity:.6;margin-top:2px;display:flex;gap:8px;align-items:center">
-          <span>${n.time}</span>
-          ${n.jobIdx!==undefined?'<span style="color:var(--acc);font-size:10px">Tap to open job →</span>':''}
-        </div>
+      <div style="flex:1">
+        <div>${n.msg}</div>
+        <div style="font-size:10px;opacity:.6;margin-top:2px">${n.time}</div>
       </div>
-      <span class="alert-close" onclick="event.stopPropagation();this.parentElement.remove();updateNotifCount()">✕</span>
+      <span class="alert-close" onclick="this.parentElement.remove();updateNotifCount()">✕</span>
     </div>
-  `).join('') : '<div style="padding:20px;text-align:center;color:var(--hint);font-size:12px">No notifications</div>';
-}
-
-// Build notifications from live JOBS (called after applyJobsFromSearch)
-function buildNotifsFromJobs(){
-  NOTIFS.length = 0;
-  const today = todayVanDisplay();
-
-  JOBS.forEach((j,idx)=>{
-    const sl = (j.st||'').toLowerCase();
-    // No Show
-    if(sl.includes('no show')){
-      NOTIFS.push({type:'warn', msg:`${j.n} — No Show flagged, follow-up needed`, time:'Recent', jobIdx:idx});
-    }
-    // Parts arrived — needs scheduling
-    if(sl.includes('parts arrived')||sl==='parts arrived'){
-      NOTIFS.push({type:'info', msg:`${j.n} — Parts arrived, schedule repair date`, time:'Recent', jobIdx:idx});
-    }
-    // Ready for pickup with CC still assigned
-    if((sl.includes('ready for pickup')||sl.includes('outstanding balance')) && j.cc && j.cc!=='N' && j.cc!=='Y'){
-      NOTIFS.push({type:'warn', msg:`${j.n} — ${j.st}, courtesy car ${j.cc} still assigned`, time:'Recent', jobIdx:idx});
-    }
-    // OUT date is today or past (still WIP)
-    if(j.out && j.out!=='TBD' && j.out!=='Today' && !sl.includes('picked up') && !sl.includes('cancel')){
-      const outD = parseJobDate(j.out);
-      const nowD = nowVancouver();
-      if(outD && outD <= nowD && sl.includes('wip')){
-        NOTIFS.push({type:'warn', msg:`${j.n} — OUT date reached, still in WIP`, time:j.out, jobIdx:idx});
-      }
-    }
-  });
-
-  // Cap at 8 most important (warns first)
-  NOTIFS.sort((a,b)=>(a.type==='warn'?-1:1)-(b.type==='warn'?-1:1));
-  if(NOTIFS.length > 8) NOTIFS.splice(8);
-
-  renderNotifs();
-  updateNotifCount();
-}
-
-// Open update modal for a job by its index in JOBS array
-function openUpdateModalByJob(idx){
-  const j = JOBS[idx];
-  if(!j) return;
-  openUpdateModal(j);
+  `).join('');
 }
 
 function updateNotifCount(){
@@ -2043,7 +2016,7 @@ async function loadLiveData(force=false){
   try {
     // Fire both calls in parallel — search gives all jobs, getDashboard gives counts/CC/nextWeek
     const [searchRes, dashRes] = await Promise.all([
-      apiFetch('search', {query:'', filter:'all'}),
+      apiFetch('search'),
       apiFetch('getDashboard'),
     ]);
 
@@ -2130,8 +2103,6 @@ function applyJobsFromSearch(rawJobs){
   renderUpcomingMini();
   renderUpcomingTable();
   renderCalendarEvents();
-  // Build live notifications from jobs
-  buildNotifsFromJobs();
 }
 
 function applyDashboardCounts(counts){
@@ -2169,38 +2140,41 @@ function applyDashboardCounts(counts){
 }
 
 function applyLiveCCStatus(ccStatus, ccInUse){
-  // FIX: iterate all 10 fleet plates — not just Object.entries(ccStatus) which
-  // omits plates absent from the sheet, making them show the old static value.
-  const FLEET_ORDER = ['VJ785L','TX235X','SB272H','LK853L',
-                       'TN321R','SB252H','XP925R','XP926R','TX225X','VN281J'];
-  let avail=0, inUse=0;
-  FLEET.length = 0;
-  FLEET_ORDER.forEach(plate=>{
-    const info = ccStatus ? ccStatus[plate] : null;
-    const isActive = info && info.active === true;
-    if(isActive) inUse++; else avail++;
-    FLEET.push({
-      plate,
-      stat: isActive ? 'inuse' : 'avail',
-      cust: isActive ? (info.name||null) : null,
-      days: isActive ? (info.inDate ? 'Since '+info.inDate : 'In use') : null,
-    });
-  });
-  const total = FLEET_ORDER.length;
+  // ccStatus: { plate: {active, name, vehicle, status, inDate, wo} }
+  const avail = Object.values(ccStatus).filter(c=>!c.active).length;
+  const inUse = Object.values(ccStatus).filter(c=> c.active).length;
+  const total = Object.keys(ccStatus).length;
+
+  // Update fleet page stat numbers by ID (reliable — no index guessing)
   const nAvail = document.getElementById('fleet-n-avail');
   const nInUse = document.getElementById('fleet-n-inuse');
   const nTotal = document.getElementById('fleet-n-total');
   if(nAvail) nAvail.textContent = avail;
   if(nInUse) nInUse.textContent = inUse;
   if(nTotal) nTotal.textContent = total;
+
+  // Nav badge
   const navBadge = document.getElementById('nav-cars-avail');
   if(navBadge) navBadge.textContent = avail;
+
+  // Update dashboard CC mini by ID
   const ccAvailEl = document.getElementById('cc-num-avail');
   const ccInUseEl = document.getElementById('cc-num-inuse');
   const ccTotalEl = document.getElementById('cc-num-total');
   if(ccAvailEl) ccAvailEl.textContent = avail;
   if(ccInUseEl) ccInUseEl.textContent = inUse;
   if(ccTotalEl) ccTotalEl.textContent = total;
+
+  // Rebuild fleet cards with live data
+  FLEET.length = 0;
+  Object.entries(ccStatus).forEach(([plate, info])=>{
+    FLEET.push({
+      plate,
+      stat: info.active ? 'inuse' : 'avail',
+      cust: info.active ? info.name : null,
+      days: info.active ? (info.inDate ? 'Since '+info.inDate : 'In use') : null,
+    });
+  });
   renderFleetEnhanced();
   renderMiniCars();
 }
@@ -2224,23 +2198,19 @@ async function loadPartsReturn(){
     const res = await apiFetch('getPartsReturn');
     if(res && res.ok && Array.isArray(res.rows)){
       PARTS.length = 0;
-      res.rows.forEach(r => {
-        // v13 returns named-field objects; v12 returned raw arrays — handle both
-        if(typeof r === 'object' && !Array.isArray(r) && r.returnDate !== undefined){
-          PARTS.push({
-            dt:r.returnDate||'', wo:r.wo||'', dealer:r.dealership||'',
-            invoice:r.invoice||'', part:r.partNumber||'', qty:r.qty||'',
-            reason:r.reason||'', driver:r.driver||'', tracking:r.tracking||'',
-            credit:r.creditStatus||'', rowIndex:r.rowIndex||0,
-          });
-        } else {
-          PARTS.push({
-            dt:r[0]||'', wo:r[1]||'', dealer:r[2]||'', invoice:r[3]||'',
-            part:r[4]||'', qty:r[5]||'', reason:r[6]||'', driver:r[7]||'',
-            tracking:r[8]||'', credit:r[9]||'', rowIndex:0,
-          });
-        }
-      });
+      res.rows.forEach(r => PARTS.push({
+        dt:     r[0] || '',
+        wo:     r[1] || '',
+        dealer: r[2] || '',
+        invoice:r[3] || '',
+        part:   r[4] || '',
+        qty:    r[5] || '',
+        reason: r[6] || '',
+        driver: r[7] || '',
+        tracking:r[8]|| '',
+        credit: r[9] || '',
+      }));
+      // Update pending count badge
       const pending = PARTS.filter(p=>(p.credit||'').toLowerCase().includes('pending')).length;
       document.querySelectorAll('.nav-badge.amber').forEach(el=>el.textContent=pending);
       renderParts();
