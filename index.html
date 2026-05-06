@@ -1861,15 +1861,6 @@ function renderParts(){
     const creditLabel = p.credit || '—';
     const wo = p.wo || '—';
     const hasTracking = p.tracking && p.tracking.trim();
-  tbody.innerHTML = PARTS.map((p,i)=>{
-    const creditLow = (p.credit||'').toLowerCase();
-    const creditClass = creditLow.includes('pending') ? 'cp-pending'
-                      : creditLow.includes('received')||creditLow.includes('credit') ? 'cp-done'
-                      : creditLow.includes('write') ? 'cp-done'
-                      : 'cp-pending';
-    const creditLabel = p.credit || '—';
-    const wo = p.wo || '—';
-    const hasTracking = p.tracking && p.tracking.trim();
     return `<tr>
       <td class="mono" style="color:var(--acc);font-size:11px">${p.dt||'—'}</td>
       <td><div class="mono">${wo}</div></td>
@@ -2892,6 +2883,7 @@ document.querySelector('#page-parts .card-action').addEventListener('click', ope
     if(acts) acts.insertBefore(btn, acts.firstChild);
   }
 })();
+function renderFleetEnhanced(){
   document.getElementById('fleet-grid').innerHTML = FLEET.map(c=>`
     <div class="fleet-card ${c.stat}">
       <div class="fleet-card-body">
