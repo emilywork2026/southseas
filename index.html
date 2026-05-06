@@ -10,21 +10,22 @@
 /* ── RESET & TOKENS ─────────────────────────────── */
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#0f1117;
-  --surf:#181c26;
-  --card:#1e2330;
-  --bdr:#2a3048;
-  --bdr2:#363d58;
-  --acc:#e85d26;
-  --acc2:#f5963d;
-  --blu:#3b82f6;
-  --grn:#22c55e;
-  --amb:#f59e0b;
-  --red:#ef4444;
-  --pur:#8b5cf6;
-  --tx:#e8eaf0;
-  --mut:#8891a8;
-  --hint:#4d5670;
+  /* Warm dark — less blue, easier on eyes at night */
+  --bg:#12110f;
+  --surf:#1c1a17;
+  --card:#242118;
+  --bdr:#33302a;
+  --bdr2:#46422e;
+  --acc:#e07b2a;
+  --acc2:#f5a84a;
+  --blu:#5b9bd5;
+  --grn:#3dba6f;
+  --amb:#d4a017;
+  --red:#d95555;
+  --pur:#9070d4;
+  --tx:#ede9e0;
+  --mut:#9a9383;
+  --hint:#5a5448;
   --r:8px;
   --rl:12px;
   --rx:16px;
@@ -33,11 +34,51 @@
 }
 html,body{height:100%;background:var(--bg);color:var(--tx);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased}
 
-/* ── SHELL LAYOUT ───────────────────────────────── */
+/* ── SHELL LAYOUT — desktop ─────────────────────── */
 #app{display:grid;grid-template-rows:52px 1fr;grid-template-columns:204px 1fr;height:100vh;overflow:hidden}
 #topbar{grid-column:1/-1;background:var(--surf);border-bottom:1px solid var(--bdr);display:flex;align-items:center;z-index:20}
 #sidebar{background:var(--surf);border-right:1px solid var(--bdr);display:flex;flex-direction:column;overflow-y:auto;z-index:10}
 #main{overflow-y:auto;overflow-x:hidden;background:var(--bg);padding:20px;display:flex;flex-direction:column;gap:0}
+
+/* ── MOBILE LAYOUT ──────────────────────────────── */
+@media(max-width:768px){
+  #app{grid-template-rows:48px 1fr 56px;grid-template-columns:1fr;height:100dvh;height:100vh}
+  #topbar{grid-column:1;padding:0 12px}
+  #sidebar{display:none}
+  #main{padding:12px;padding-bottom:0;grid-row:2}
+  /* Bottom nav bar */
+  #mobile-nav{
+    display:flex;grid-row:3;grid-column:1;
+    background:var(--surf);border-top:1px solid var(--bdr);
+    align-items:stretch;z-index:20;
+  }
+  .mn-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:3px;padding:6px 4px;cursor:pointer;color:var(--mut);font-size:9px;
+    border-top:2px solid transparent;transition:all .12s;-webkit-tap-highlight-color:transparent}
+  .mn-item.active{color:var(--acc);border-top-color:var(--acc)}
+  .mn-item svg{width:18px;height:18px;stroke-width:1.8}
+  /* Collapse topbar on mobile */
+  .logo-zone{width:auto;border-right:none;padding:0}
+  .search-wrap{max-width:none}
+  .tb-right .tb-chip:not(#notif-chip):not(#refresh-chip){display:none}
+  .user-av{display:none}
+  /* Simplify main content spacing */
+  .stat-grid{grid-template-columns:repeat(2,1fr);gap:8px}
+  .two-col{grid-template-columns:1fr;gap:10px}
+  .right-stack{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .job-table{font-size:11px}
+  .job-table th:nth-child(n+5),.job-table td:nth-child(n+5){display:none}
+  /* Modals full-screen on mobile */
+  .modal{width:100vw!important;max-width:100vw!important;max-height:90dvh;max-height:90vh;border-radius:var(--rl) var(--rl) 0 0;position:fixed;bottom:0;left:0;margin:0}
+  .modal-overlay{align-items:flex-end}
+  /* Fleet grid 2-col on mobile */
+  .fleet-grid{grid-template-columns:repeat(2,1fr)!important}
+  /* Parts table simplify */
+  .parts-table th:nth-child(n+5),.parts-table td:nth-child(n+5){display:none}
+}
+@media(min-width:769px){
+  #mobile-nav{display:none}
+}
 
 /* ── TOPBAR ─────────────────────────────────────── */
 .logo-zone{width:204px;display:flex;align-items:center;gap:10px;padding:0 16px;border-right:1px solid var(--bdr);height:100%;flex-shrink:0}
@@ -704,12 +745,11 @@ body.role-viewer #quick-bar{display:none!important}
       <table class="job-table" style="min-width:500px">
         <thead><tr>
           <th style="width:15%">Date</th>
-          <th style="width:23%">Customer</th>
-          <th style="width:22%">Vehicle</th>
+          <th style="width:25%">Customer</th>
+          <th style="width:25%">Vehicle</th>
           <th style="width:10%">Type</th>
           <th style="width:12%">Body</th>
-          <th style="width:11%">OUT est.</th>
-          <th style="width:7%"></th>
+          <th style="width:13%">OUT est.</th>
         </tr></thead>
         <tbody id="upcoming-tbody"></tbody>
       </table>
@@ -786,7 +826,7 @@ body.role-viewer #quick-bar{display:none!important}
     <div class="card-head"><div class="card-title">Parts return log</div><div class="card-action" onclick="openPartsLog()">+ Log return</div></div>
     <table class="parts-table">
       <thead><tr>
-        <th>Return date</th><th>WO#</th><th>Dealership</th><th>Part #</th><th>Reason</th><th>Driver</th><th>Tracking</th><th>Credit status</th><th></th>
+        <th>Return date</th><th>WO#</th><th>Dealership</th><th>Part #</th><th>Reason</th><th>Driver</th><th>Tracking</th><th>Credit status</th>
       </tr></thead>
       <tbody id="parts-tbody"></tbody>
     </table>
@@ -794,6 +834,31 @@ body.role-viewer #quick-bar{display:none!important}
 </div>
 
 </div><!-- /main -->
+
+<!-- ═══════════════ MOBILE BOTTOM NAV ═════════════ -->
+<nav id="mobile-nav">
+  <div class="mn-item active" data-page="dashboard" onclick="navTo('dashboard',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+    Home
+  </div>
+  <div class="mn-item" data-page="search" onclick="navTo('search',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    Search
+  </div>
+  <div class="mn-item" data-page="schedule" onclick="navTo('schedule',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    Schedule
+  </div>
+  <div class="mn-item" data-page="cars" onclick="navTo('cars',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v5a2 2 0 0 1-2 2h-2"/><circle cx="8.5" cy="17" r="2"/><circle cx="17.5" cy="17" r="2"/></svg>
+    Cars
+  </div>
+  <div class="mn-item" data-page="parts" onclick="navTo('parts',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+    Parts
+  </div>
+</nav>
+
 </div><!-- /app -->
 
 <!-- ═══════════════════════════════ MODALS ════════════════════════════════ -->
@@ -1396,9 +1461,14 @@ function fmtDate(d){
 function navTo(pageId, triggerEl){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('page-'+pageId).classList.add('active');
+  // Sync sidebar nav
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   const navEl = triggerEl || document.querySelector(`.nav-item[data-page="${pageId}"]`);
-  if(navEl) navEl.classList.add('active');
+  if(navEl && navEl.classList.contains('nav-item')) navEl.classList.add('active');
+  // Sync mobile bottom nav
+  document.querySelectorAll('#mobile-nav .mn-item').forEach(n=>n.classList.remove('active'));
+  const mobileEl = document.querySelector(`#mobile-nav .mn-item[data-page="${pageId}"]`);
+  if(mobileEl) mobileEl.classList.add('active');
 }
 
 document.querySelectorAll('.nav-item').forEach(item=>{
@@ -1577,35 +1647,37 @@ function renderMiniCars(){
 
 /* ── RENDER: UPCOMING MINI ──────────────────────── */
 function renderUpcomingMini(){
-  // Build from live JOBS (populated by applyJobsFromSearch) — not static UPCOMING array
+  // Build from live JOBS, sorted by sched/inD date
   const now = nowVancouver();
   const cutoff = new Date(now.getTime() + 45 * 86400000);
   const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-  const upcoming = JOBS.filter(j => {
+  const upcoming = JOBS.filter(j=>{
     const sl = (j.st||'').toLowerCase();
     if(sl.includes('picked up')||sl.includes('cancel')||sl.includes('total loss')) return false;
-    if(j.source === 'Archive' || j.source === 'Cancelled') return false;
-    const d = parseJobDate(j.schedDate || j.out !== 'TBD' ? j.out : '') || parseJobDate(j.inD);
-    if(!d || isNaN(d.getTime())) return false;
+    if(j.source==='Archive'||j.source==='Cancelled') return false;
+    // Use schedDate (NJL sched col) or inD (WIP IN col) as the "IN" date
+    const d = parseJobDate(j.schedDate) || parseJobDate(j.inD);
+    if(!d||isNaN(d.getTime())) return false;
     return d >= now && d <= cutoff;
-  }).sort((a,b) => {
-    const da = parseJobDate(a.schedDate || (a.out!=='TBD'?a.out:'')) || parseJobDate(a.inD) || new Date(9e15);
-    const db = parseJobDate(b.schedDate || (b.out!=='TBD'?b.out:'')) || parseJobDate(b.inD) || new Date(9e15);
-    return da - db;
-  }).slice(0, 3);
+  }).sort((a,b)=>{
+    const da = parseJobDate(a.schedDate)||parseJobDate(a.inD)||new Date(9e15);
+    const db = parseJobDate(b.schedDate)||parseJobDate(b.inD)||new Date(9e15);
+    return da-db;
+  }).slice(0,3);
 
   if(!upcoming.length){
     document.getElementById('upcoming-mini').innerHTML =
-      '<div style="padding:12px;text-align:center;color:var(--hint);font-size:12px">No upcoming jobs</div>';
+      '<div style="padding:12px 0;text-align:center;color:var(--hint);font-size:12px">No upcoming jobs</div>';
     return;
   }
 
-  document.getElementById('upcoming-mini').innerHTML = upcoming.map(u => {
-    const d = parseJobDate(u.schedDate || (u.out!=='TBD'?u.out:'')) || parseJobDate(u.inD);
+  document.getElementById('upcoming-mini').innerHTML = upcoming.map(u=>{
+    // Show IN date (schedDate first, then inD) — NOT the out/completion date
+    const d = parseJobDate(u.schedDate) || parseJobDate(u.inD);
     const day = d ? String(d.getDate()).padStart(2,'0') : '--';
     const mon = d ? MON[d.getMonth()] : '---';
-    return `<div class="upcoming-item">
+    return `<div class="upcoming-item" onclick="openUpdateModalByJob(${JOBS.indexOf(u)})" style="cursor:pointer">
       <div class="upcoming-date-box"><div class="udb-day">${day}</div><div class="udb-mon">${mon}</div></div>
       <div class="upcoming-info">
         <div class="upcoming-name">${u.n}</div>
@@ -1714,56 +1786,26 @@ function selectCalDay(el, key){
   document.getElementById('upcoming-title').textContent = evs.length ? `Events on ${key}` : `No events — ${key}`;
 }
 
-// Edit a job's scheduled/out date directly from the calendar or upcoming table
-async function editCalDate(rowIndex, source, currentDate, customerName){
-  const newDateISO = prompt(
-    `Change scheduled date for ${customerName||'job'}\n(enter as dd-MMM-yyyy e.g. 12-Jun-2026):`,
-    currentDate || ''
-  );
-  if(!newDateISO || newDateISO.trim() === (currentDate||'').trim()) return;
-  try {
-    const res = await apiFetch('saveOutDate', {
-      rowIndex, source: source||'WIP', date: newDateISO.trim()
-    });
-    if(res && res.ok){
-      toast(`Date updated → ${newDateISO.trim()}`, 'success');
-      await loadLiveData(false);
-    } else {
-      toast('Update failed: '+(res?.error||'Unknown'),'error');
-    }
-  } catch(e){
-    toast('Update failed','error');
-  }
-}
-
-// Safe wrapper used by upcoming table rows (avoids quote escaping in onclick)
-function editCalDateByIdx(i){
-  const u = (window._upcomingRows||{})[i];
-  if(!u) return;
-  const dateStr = u.schedDate || (u.out !== 'TBD' ? u.out : '') || u.inD || '';
-  editCalDate(u.rowIndex||0, u.source||'WIP', dateStr, u.n||'');
-}
-
 document.getElementById('cal-prev').onclick = ()=>{ if(calMonth===0){calMonth=11;calYear--;}else calMonth--; renderCalendar(); };
 document.getElementById('cal-next').onclick = ()=>{ if(calMonth===11){calMonth=0;calYear++;}else calMonth++; renderCalendar(); };
 
 /* ── RENDER: UPCOMING TABLE ─────────────────────── */
 function renderUpcomingTable(){
-  // Build from live JOBS — not static UPCOMING array
   const now = nowVancouver();
   const cutoff = new Date(now.getTime() + 60 * 86400000);
 
-  const upcoming = JOBS.filter(j => {
+  const upcoming = JOBS.filter(j=>{
     const sl = (j.st||'').toLowerCase();
     if(sl.includes('picked up')||sl.includes('cancel')||sl.includes('total loss')) return false;
-    if(j.source === 'Archive' || j.source === 'Cancelled') return false;
-    const d = parseJobDate(j.schedDate || (j.out!=='TBD'?j.out:'')) || parseJobDate(j.inD);
-    if(!d || isNaN(d.getTime())) return false;
+    if(j.source==='Archive'||j.source==='Cancelled') return false;
+    // Use schedDate or inD as the "scheduled IN" date
+    const d = parseJobDate(j.schedDate) || parseJobDate(j.inD);
+    if(!d||isNaN(d.getTime())) return false;
     return d >= now && d <= cutoff;
-  }).sort((a,b) => {
-    const da = parseJobDate(a.schedDate || (a.out!=='TBD'?a.out:'')) || parseJobDate(a.inD) || new Date(9e15);
-    const db = parseJobDate(b.schedDate || (b.out!=='TBD'?b.out:'')) || parseJobDate(b.inD) || new Date(9e15);
-    return da - db;
+  }).sort((a,b)=>{
+    const da = parseJobDate(a.schedDate)||parseJobDate(a.inD)||new Date(9e15);
+    const db = parseJobDate(b.schedDate)||parseJobDate(b.inD)||new Date(9e15);
+    return da-db;
   });
 
   if(!upcoming.length){
@@ -1772,20 +1814,16 @@ function renderUpcomingTable(){
     return;
   }
 
-  // Store jobs in a temp map so edit buttons can reference them safely
-  window._upcomingRows = {};
-  document.getElementById('upcoming-tbody').innerHTML = upcoming.map((u, i) => {
-    const dateStr = u.schedDate || (u.out !== 'TBD' ? u.out : '') || u.inD || '';
-    window._upcomingRows[i] = u;
-    return `<tr>
-      <td class="mono">${dateStr}</td>
+  document.getElementById('upcoming-tbody').innerHTML = upcoming.map(u=>{
+    // Show IN date (schedDate or inD) in the date column
+    const inDateStr = u.schedDate || u.inD || '';
+    return `<tr onclick="openUpdateModalByJob(${JOBS.indexOf(u)})" style="cursor:pointer">
+      <td class="mono">${inDateStr}</td>
       <td><div class="j-name">${u.n}</div></td>
       <td style="font-size:11px;color:var(--mut)">${u.v}</td>
       <td>${makeTag(u.type)}</td>
       <td style="font-size:11px;color:var(--mut)">${u.body}</td>
       <td>${fmtDate(u.out)}</td>
-      <td><button class="btn btn-ghost btn-sm" style="padding:2px 7px;font-size:11px"
-          onclick="editCalDateByIdx(${i})">✏️</button></td>
     </tr>`;
   }).join('');
 }
@@ -1870,7 +1908,6 @@ function renderParts(){
       <td style="font-size:11px;color:var(--mut)">${p.driver||'—'}</td>
       <td style="font-size:11px;color:var(--hint)">${hasTracking?p.tracking:'—'}</td>
       <td><span class="credit-pill ${creditClass}">${creditLabel}</span></td>
-      <td><button class="btn btn-ghost btn-sm" style="padding:2px 8px;font-size:11px" onclick="openEditPartsRow(${i})">Edit</button></td>
     </tr>`;
   }).join('');
 
@@ -1892,18 +1929,66 @@ function renderParts(){
 
 /* ── RENDER: NOTIFICATIONS ──────────────────────── */
 function renderNotifs(){
-  document.getElementById('notif-list').innerHTML = NOTIFS.map(n=>`
-    <div class="alert ${n.type==='warn'?'alert-warn':'alert-info'}" style="margin-bottom:8px">
-      <svg viewBox="0 0 24 24" fill="${n.type==='warn'?'var(--red)':'none'}" stroke="${n.type==='warn'?'none':'#93c5fd'}" stroke-width="2" width="13" height="13">
+  document.getElementById('notif-list').innerHTML = NOTIFS.length ? NOTIFS.map((n,i)=>`
+    <div class="alert ${n.type==='warn'?'alert-warn':'alert-info'}" style="margin-bottom:8px;cursor:${n.jobIdx!==undefined?'pointer':'default'}"
+         onclick="${n.jobIdx!==undefined?`closeModal('notif-modal');openUpdateModalByJob(${n.jobIdx})`:''}">
+      <svg viewBox="0 0 24 24" fill="${n.type==='warn'?'var(--red)':'none'}" stroke="${n.type==='warn'?'none':'var(--blu)'}" stroke-width="2" width="13" height="13">
         ${n.type==='warn'?'<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>':'<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>'}
       </svg>
-      <div style="flex:1">
-        <div>${n.msg}</div>
-        <div style="font-size:10px;opacity:.6;margin-top:2px">${n.time}</div>
+      <div style="flex:1;min-width:0">
+        <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${n.msg}</div>
+        <div style="font-size:10px;opacity:.6;margin-top:2px;display:flex;gap:8px;align-items:center">
+          <span>${n.time}</span>
+          ${n.jobIdx!==undefined?'<span style="color:var(--acc);font-size:10px">Tap to open job →</span>':''}
+        </div>
       </div>
-      <span class="alert-close" onclick="this.parentElement.remove();updateNotifCount()">✕</span>
+      <span class="alert-close" onclick="event.stopPropagation();this.parentElement.remove();updateNotifCount()">✕</span>
     </div>
-  `).join('');
+  `).join('') : '<div style="padding:20px;text-align:center;color:var(--hint);font-size:12px">No notifications</div>';
+}
+
+// Build notifications from live JOBS (called after applyJobsFromSearch)
+function buildNotifsFromJobs(){
+  NOTIFS.length = 0;
+  const today = todayVanDisplay();
+
+  JOBS.forEach((j,idx)=>{
+    const sl = (j.st||'').toLowerCase();
+    // No Show
+    if(sl.includes('no show')){
+      NOTIFS.push({type:'warn', msg:`${j.n} — No Show flagged, follow-up needed`, time:'Recent', jobIdx:idx});
+    }
+    // Parts arrived — needs scheduling
+    if(sl.includes('parts arrived')||sl==='parts arrived'){
+      NOTIFS.push({type:'info', msg:`${j.n} — Parts arrived, schedule repair date`, time:'Recent', jobIdx:idx});
+    }
+    // Ready for pickup with CC still assigned
+    if((sl.includes('ready for pickup')||sl.includes('outstanding balance')) && j.cc && j.cc!=='N' && j.cc!=='Y'){
+      NOTIFS.push({type:'warn', msg:`${j.n} — ${j.st}, courtesy car ${j.cc} still assigned`, time:'Recent', jobIdx:idx});
+    }
+    // OUT date is today or past (still WIP)
+    if(j.out && j.out!=='TBD' && j.out!=='Today' && !sl.includes('picked up') && !sl.includes('cancel')){
+      const outD = parseJobDate(j.out);
+      const nowD = nowVancouver();
+      if(outD && outD <= nowD && sl.includes('wip')){
+        NOTIFS.push({type:'warn', msg:`${j.n} — OUT date reached, still in WIP`, time:j.out, jobIdx:idx});
+      }
+    }
+  });
+
+  // Cap at 8 most important (warns first)
+  NOTIFS.sort((a,b)=>(a.type==='warn'?-1:1)-(b.type==='warn'?-1:1));
+  if(NOTIFS.length > 8) NOTIFS.splice(8);
+
+  renderNotifs();
+  updateNotifCount();
+}
+
+// Open update modal for a job by its index in JOBS array
+function openUpdateModalByJob(idx){
+  const j = JOBS[idx];
+  if(!j) return;
+  openUpdateModal(j);
 }
 
 function updateNotifCount(){
@@ -2045,6 +2130,8 @@ function applyJobsFromSearch(rawJobs){
   renderUpcomingMini();
   renderUpcomingTable();
   renderCalendarEvents();
+  // Build live notifications from jobs
+  buildNotifsFromJobs();
 }
 
 function applyDashboardCounts(counts){
@@ -2082,51 +2169,38 @@ function applyDashboardCounts(counts){
 }
 
 function applyLiveCCStatus(ccStatus, ccInUse){
-  // ccStatus: { plate: {active, name, vehicle, status, inDate, wo} }
-  // FIX: iterate ALL 10 fleet plates explicitly.
-  // Object.entries(ccStatus) only iterates plates that appear in WIP — if the
-  // Apps Script v13 getDashboard doesn't return a key for a plate (e.g. a new
-  // plate with no history), that plate would be omitted and show the old static
-  // FLEET value instead of Available.
+  // FIX: iterate all 10 fleet plates — not just Object.entries(ccStatus) which
+  // omits plates absent from the sheet, making them show the old static value.
   const FLEET_ORDER = ['VJ785L','TX235X','SB272H','LK853L',
                        'TN321R','SB252H','XP925R','XP926R','TX225X','VN281J'];
-
-  let avail = 0, inUse = 0;
+  let avail=0, inUse=0;
   FLEET.length = 0;
-  FLEET_ORDER.forEach(plate => {
+  FLEET_ORDER.forEach(plate=>{
     const info = ccStatus ? ccStatus[plate] : null;
     const isActive = info && info.active === true;
     if(isActive) inUse++; else avail++;
     FLEET.push({
       plate,
       stat: isActive ? 'inuse' : 'avail',
-      cust: isActive ? (info.name || null) : null,
+      cust: isActive ? (info.name||null) : null,
       days: isActive ? (info.inDate ? 'Since '+info.inDate : 'In use') : null,
     });
   });
-
   const total = FLEET_ORDER.length;
-
-  // Update fleet page stat numbers by ID
   const nAvail = document.getElementById('fleet-n-avail');
   const nInUse = document.getElementById('fleet-n-inuse');
   const nTotal = document.getElementById('fleet-n-total');
   if(nAvail) nAvail.textContent = avail;
   if(nInUse) nInUse.textContent = inUse;
   if(nTotal) nTotal.textContent = total;
-
-  // Nav badge
   const navBadge = document.getElementById('nav-cars-avail');
   if(navBadge) navBadge.textContent = avail;
-
-  // Update dashboard CC mini by ID
   const ccAvailEl = document.getElementById('cc-num-avail');
   const ccInUseEl = document.getElementById('cc-num-inuse');
   const ccTotalEl = document.getElementById('cc-num-total');
   if(ccAvailEl) ccAvailEl.textContent = avail;
   if(ccInUseEl) ccInUseEl.textContent = inUse;
   if(ccTotalEl) ccTotalEl.textContent = total;
-
   renderFleetEnhanced();
   renderMiniCars();
 }
@@ -2151,33 +2225,22 @@ async function loadPartsReturn(){
     if(res && res.ok && Array.isArray(res.rows)){
       PARTS.length = 0;
       res.rows.forEach(r => {
-        // v13 getPartsReturn returns objects with named fields
-        // v12 returned raw arrays — handle both for backward compat
+        // v13 returns named-field objects; v12 returned raw arrays — handle both
         if(typeof r === 'object' && !Array.isArray(r) && r.returnDate !== undefined){
           PARTS.push({
-            dt:      r.returnDate || '',
-            wo:      r.wo         || '',
-            dealer:  r.dealership || '',
-            invoice: r.invoice    || '',
-            part:    r.partNumber || '',
-            qty:     r.qty        || '',
-            reason:  r.reason     || '',
-            driver:  r.driver     || '',
-            tracking:r.tracking   || '',
-            credit:  r.creditStatus || '',
-            rowIndex:r.rowIndex   || 0,
+            dt:r.returnDate||'', wo:r.wo||'', dealer:r.dealership||'',
+            invoice:r.invoice||'', part:r.partNumber||'', qty:r.qty||'',
+            reason:r.reason||'', driver:r.driver||'', tracking:r.tracking||'',
+            credit:r.creditStatus||'', rowIndex:r.rowIndex||0,
           });
         } else {
-          // Legacy raw array format
           PARTS.push({
-            dt:     r[0] || '', wo:     r[1] || '', dealer: r[2] || '',
-            invoice:r[3] || '', part:   r[4] || '', qty:    r[5] || '',
-            reason: r[6] || '', driver: r[7] || '', tracking:r[8]|| '',
-            credit: r[9] || '', rowIndex: 0,
+            dt:r[0]||'', wo:r[1]||'', dealer:r[2]||'', invoice:r[3]||'',
+            part:r[4]||'', qty:r[5]||'', reason:r[6]||'', driver:r[7]||'',
+            tracking:r[8]||'', credit:r[9]||'', rowIndex:0,
           });
         }
       });
-      // Update pending count badge
       const pending = PARTS.filter(p=>(p.credit||'').toLowerCase().includes('pending')).length;
       document.querySelectorAll('.nav-badge.amber').forEach(el=>el.textContent=pending);
       renderParts();
@@ -2781,76 +2844,22 @@ function toggleNSDate(){
 }
 
 /* ── SAVE PARTS LOG ─────────────────────────────── */
-function openEditPartsRow(idx){
-  const p = PARTS[idx];
-  if(!p) return;
-  // Populate the parts-log-modal fields with existing data for editing
-  document.getElementById('pl-date').value   = p.dt   || '';
-  document.getElementById('pl-wo').value     = p.wo   || '';
-  document.getElementById('pl-dealer').value = p.dealer || '';
-  document.getElementById('pl-part').value   = p.part  || '';
-  // Store row index and part index for save
-  document.getElementById('pl-date').dataset.editRow  = p.rowIndex || 0;
-  document.getElementById('pl-date').dataset.editIdx  = idx;
-  // Set reason select
-  const rs = document.getElementById('pl-reason');
-  for(let o of rs.options) if(o.text === p.reason || o.value === p.reason) { rs.value = o.value; break; }
-  // Set driver select
-  const ds = document.getElementById('pl-driver');
-  for(let o of ds.options) if(o.text === p.driver || o.value === p.driver) { ds.value = o.value; break; }
-  document.querySelector('#parts-log-modal .modal-title').textContent = 'Edit parts return';
-  openModal('parts-log-modal');
-}
-
-async function savePartsLog(){
+function savePartsLog(){
   const wo = document.getElementById('pl-wo').value.trim();
   const dealer = document.getElementById('pl-dealer').value.trim();
   if(!wo||!dealer){ toast('WO# and dealership are required','warn'); return; }
-
-  const dateInput = document.getElementById('pl-date');
-  const editRow   = parseInt(dateInput.dataset.editRow || 0);
-  // Convert yyyy-mm-dd from date input back to dd-MMM-yyyy for the sheet
-  let dateVal = dateInput.value || '';
-  if(dateVal && dateVal.match(/^\d{4}-\d{2}-\d{2}$/)){
-    const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    const [y,m,d] = dateVal.split('-');
-    dateVal = `${d}-${MON[parseInt(m)-1]}-${y}`;
-  }
-  if(!dateVal) dateVal = todayVanDisplay();
-
-  const payload = {
-    editRow:      editRow >= 4 ? editRow : '',
-    returnDate:   dateVal,
-    wo,
-    dealership:   dealer,
-    invoice:      '',
-    partNumber:   document.getElementById('pl-part').value.trim() || '',
-    qty:          '1',
-    reason:       document.getElementById('pl-reason').value,
-    driver:       document.getElementById('pl-driver').value,
-    tracking:     '',
-    creditStatus: editRow >= 4 ? (PARTS.find(p=>p.rowIndex===editRow)?.credit || 'Pending') : 'Pending',
-  };
-
-  // Reset edit state
-  dateInput.dataset.editRow = '';
-  dateInput.dataset.editIdx = '';
-  document.querySelector('#parts-log-modal .modal-title').textContent = 'Log parts return';
-
+  const today = todayVanDisplay();
+  PARTS.unshift({
+    dt: document.getElementById('pl-date').value || today,
+    wo, dealer,
+    part: document.getElementById('pl-part').value || '—',
+    reason: document.getElementById('pl-reason').value,
+    driver: document.getElementById('pl-driver').value,
+    credit: 'Pending',
+  });
+  renderParts();
+  toast(`Parts return logged — ${wo}`, 'success');
   closeModal('parts-log-modal');
-
-  // Call API to persist to sheet
-  try {
-    const res = await apiFetch('savePartsReturn', payload);
-    if(res && res.ok){
-      toast(`Parts return ${editRow >= 4 ? 'updated' : 'logged'} — ${wo}`, 'success');
-      await loadPartsReturn(); // reload from sheet
-    } else {
-      toast('Save failed: '+(res?.error||'Unknown error'),'error');
-    }
-  } catch(e){
-    toast('Save failed — check connection','error');
-  }
 }
 
 /* ── SHORTCUTS MODAL BODY ────────────────────────── */
