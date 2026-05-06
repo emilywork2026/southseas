@@ -704,11 +704,12 @@ body.role-viewer #quick-bar{display:none!important}
       <table class="job-table" style="min-width:500px">
         <thead><tr>
           <th style="width:15%">Date</th>
-          <th style="width:25%">Customer</th>
-          <th style="width:25%">Vehicle</th>
+          <th style="width:23%">Customer</th>
+          <th style="width:22%">Vehicle</th>
           <th style="width:10%">Type</th>
           <th style="width:12%">Body</th>
-          <th style="width:13%">OUT est.</th>
+          <th style="width:11%">OUT est.</th>
+          <th style="width:7%"></th>
         </tr></thead>
         <tbody id="upcoming-tbody"></tbody>
       </table>
@@ -785,7 +786,7 @@ body.role-viewer #quick-bar{display:none!important}
     <div class="card-head"><div class="card-title">Parts return log</div><div class="card-action" onclick="openPartsLog()">+ Log return</div></div>
     <table class="parts-table">
       <thead><tr>
-        <th>Return date</th><th>WO#</th><th>Dealership</th><th>Part #</th><th>Reason</th><th>Driver</th><th>Tracking</th><th>Credit status</th>
+        <th>Return date</th><th>WO#</th><th>Dealership</th><th>Part #</th><th>Reason</th><th>Driver</th><th>Tracking</th><th>Credit status</th><th></th>
       </tr></thead>
       <tbody id="parts-tbody"></tbody>
     </table>
@@ -1251,7 +1252,7 @@ window.addEventListener('load',()=>{
 });
 
 /* ── CONSTANTS ─────────────────────────────────── */
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxNJafYadCoi75eLzvohQ7gD8T29gGnTotbuuE0MhlW3Dc9zNPTqpxMb35hX6SozuMM0Q/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzoeiWcCMKCAVsxIx9JvQAST_ZnaZWu1Yl1Uxt8ZM6DswFjvx0JpBRA9MudsAku_qoRTQ/exec';
 
 const PILL_CLASS = {
   'WIP':'s-wip','In Progress':'s-inprog','In progress':'s-inprog',
@@ -1576,10 +1577,36 @@ function renderMiniCars(){
 
 /* ── RENDER: UPCOMING MINI ──────────────────────── */
 function renderUpcomingMini(){
-  document.getElementById('upcoming-mini').innerHTML = UPCOMING.slice(0,3).map(u=>{
-    const [d,m] = u.dt.split('-');
+  // Build from live JOBS (populated by applyJobsFromSearch) — not static UPCOMING array
+  const now = nowVancouver();
+  const cutoff = new Date(now.getTime() + 45 * 86400000);
+  const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  const upcoming = JOBS.filter(j => {
+    const sl = (j.st||'').toLowerCase();
+    if(sl.includes('picked up')||sl.includes('cancel')||sl.includes('total loss')) return false;
+    if(j.source === 'Archive' || j.source === 'Cancelled') return false;
+    const d = parseJobDate(j.schedDate || j.out !== 'TBD' ? j.out : '') || parseJobDate(j.inD);
+    if(!d || isNaN(d.getTime())) return false;
+    return d >= now && d <= cutoff;
+  }).sort((a,b) => {
+    const da = parseJobDate(a.schedDate || (a.out!=='TBD'?a.out:'')) || parseJobDate(a.inD) || new Date(9e15);
+    const db = parseJobDate(b.schedDate || (b.out!=='TBD'?b.out:'')) || parseJobDate(b.inD) || new Date(9e15);
+    return da - db;
+  }).slice(0, 3);
+
+  if(!upcoming.length){
+    document.getElementById('upcoming-mini').innerHTML =
+      '<div style="padding:12px;text-align:center;color:var(--hint);font-size:12px">No upcoming jobs</div>';
+    return;
+  }
+
+  document.getElementById('upcoming-mini').innerHTML = upcoming.map(u => {
+    const d = parseJobDate(u.schedDate || (u.out!=='TBD'?u.out:'')) || parseJobDate(u.inD);
+    const day = d ? String(d.getDate()).padStart(2,'0') : '--';
+    const mon = d ? MON[d.getMonth()] : '---';
     return `<div class="upcoming-item">
-      <div class="upcoming-date-box"><div class="udb-day">${d}</div><div class="udb-mon">${m}</div></div>
+      <div class="upcoming-date-box"><div class="udb-day">${day}</div><div class="udb-mon">${mon}</div></div>
       <div class="upcoming-info">
         <div class="upcoming-name">${u.n}</div>
         <div class="upcoming-veh">${u.v}</div>
@@ -1687,21 +1714,70 @@ function selectCalDay(el, key){
   document.getElementById('upcoming-title').textContent = evs.length ? `Events on ${key}` : `No events — ${key}`;
 }
 
+// Edit a job's scheduled/out date directly from the calendar or upcoming table
+async function editCalDate(rowIndex, source, currentDate, customerName){
+  const newDateISO = prompt(
+    `Change scheduled date for ${customerName||'job'}\n(enter as dd-MMM-yyyy e.g. 12-Jun-2026):`,
+    currentDate || ''
+  );
+  if(!newDateISO || newDateISO.trim() === (currentDate||'').trim()) return;
+  try {
+    const res = await apiFetch('saveOutDate', {
+      rowIndex, source: source||'WIP', date: newDateISO.trim()
+    });
+    if(res && res.ok){
+      toast(`Date updated → ${newDateISO.trim()}`, 'success');
+      await loadLiveData(false);
+    } else {
+      toast('Update failed: '+(res?.error||'Unknown'),'error');
+    }
+  } catch(e){
+    toast('Update failed','error');
+  }
+}
+
 document.getElementById('cal-prev').onclick = ()=>{ if(calMonth===0){calMonth=11;calYear--;}else calMonth--; renderCalendar(); };
 document.getElementById('cal-next').onclick = ()=>{ if(calMonth===11){calMonth=0;calYear++;}else calMonth++; renderCalendar(); };
 
 /* ── RENDER: UPCOMING TABLE ─────────────────────── */
 function renderUpcomingTable(){
-  document.getElementById('upcoming-tbody').innerHTML = UPCOMING.map(u=>`
-    <tr>
-      <td class="mono">${u.dt}</td>
+  // Build from live JOBS — not static UPCOMING array
+  const now = nowVancouver();
+  const cutoff = new Date(now.getTime() + 60 * 86400000);
+
+  const upcoming = JOBS.filter(j => {
+    const sl = (j.st||'').toLowerCase();
+    if(sl.includes('picked up')||sl.includes('cancel')||sl.includes('total loss')) return false;
+    if(j.source === 'Archive' || j.source === 'Cancelled') return false;
+    const d = parseJobDate(j.schedDate || (j.out!=='TBD'?j.out:'')) || parseJobDate(j.inD);
+    if(!d || isNaN(d.getTime())) return false;
+    return d >= now && d <= cutoff;
+  }).sort((a,b) => {
+    const da = parseJobDate(a.schedDate || (a.out!=='TBD'?a.out:'')) || parseJobDate(a.inD) || new Date(9e15);
+    const db = parseJobDate(b.schedDate || (b.out!=='TBD'?b.out:'')) || parseJobDate(b.inD) || new Date(9e15);
+    return da - db;
+  });
+
+  if(!upcoming.length){
+    document.getElementById('upcoming-tbody').innerHTML =
+      `<tr><td colspan="6" style="padding:20px;text-align:center;color:var(--hint);font-size:12px">No upcoming jobs in the next 60 days</td></tr>`;
+    return;
+  }
+
+  document.getElementById('upcoming-tbody').innerHTML = upcoming.map(u => {
+    const dateStr = u.schedDate || (u.out !== 'TBD' ? u.out : '') || u.inD || '';
+    return `<tr>
+      <td class="mono">${dateStr}</td>
       <td><div class="j-name">${u.n}</div></td>
       <td style="font-size:11px;color:var(--mut)">${u.v}</td>
       <td>${makeTag(u.type)}</td>
       <td style="font-size:11px;color:var(--mut)">${u.body}</td>
       <td>${fmtDate(u.out)}</td>
-    </tr>
-  `).join('');
+      <td><button class="btn btn-ghost btn-sm" style="padding:2px 7px;font-size:11px"
+          onclick="editCalDate(${u.rowIndex||0},'${u.source||'WIP'}','${dateStr}','${(u.n||'').replace(/'/g,'')}')"
+        >✏️</button></td>
+    </tr>`;
+  }).join('');
 }
 
 /* ── RENDER: FLEET ──────────────────────────────── */
@@ -1775,6 +1851,15 @@ function renderParts(){
     const creditLabel = p.credit || '—';
     const wo = p.wo || '—';
     const hasTracking = p.tracking && p.tracking.trim();
+  tbody.innerHTML = PARTS.map((p,i)=>{
+    const creditLow = (p.credit||'').toLowerCase();
+    const creditClass = creditLow.includes('pending') ? 'cp-pending'
+                      : creditLow.includes('received')||creditLow.includes('credit') ? 'cp-done'
+                      : creditLow.includes('write') ? 'cp-done'
+                      : 'cp-pending';
+    const creditLabel = p.credit || '—';
+    const wo = p.wo || '—';
+    const hasTracking = p.tracking && p.tracking.trim();
     return `<tr>
       <td class="mono" style="color:var(--acc);font-size:11px">${p.dt||'—'}</td>
       <td><div class="mono">${wo}</div></td>
@@ -1784,6 +1869,7 @@ function renderParts(){
       <td style="font-size:11px;color:var(--mut)">${p.driver||'—'}</td>
       <td style="font-size:11px;color:var(--hint)">${hasTracking?p.tracking:'—'}</td>
       <td><span class="credit-pill ${creditClass}">${creditLabel}</span></td>
+      <td><button class="btn btn-ghost btn-sm" style="padding:2px 8px;font-size:11px" onclick="openEditPartsRow(${i})">Edit</button></td>
     </tr>`;
   }).join('');
 
@@ -1871,7 +1957,7 @@ async function loadLiveData(force=false){
   try {
     // Fire both calls in parallel — search gives all jobs, getDashboard gives counts/CC/nextWeek
     const [searchRes, dashRes] = await Promise.all([
-      apiFetch('search'),
+      apiFetch('search', {query:'', filter:'all'}),
       apiFetch('getDashboard'),
     ]);
 
@@ -1996,11 +2082,31 @@ function applyDashboardCounts(counts){
 
 function applyLiveCCStatus(ccStatus, ccInUse){
   // ccStatus: { plate: {active, name, vehicle, status, inDate, wo} }
-  const avail = Object.values(ccStatus).filter(c=>!c.active).length;
-  const inUse = Object.values(ccStatus).filter(c=> c.active).length;
-  const total = Object.keys(ccStatus).length;
+  // FIX: iterate ALL 10 fleet plates explicitly.
+  // Object.entries(ccStatus) only iterates plates that appear in WIP — if the
+  // Apps Script v13 getDashboard doesn't return a key for a plate (e.g. a new
+  // plate with no history), that plate would be omitted and show the old static
+  // FLEET value instead of Available.
+  const FLEET_ORDER = ['VJ785L','TX235X','SB272H','LK853L',
+                       'TN321R','SB252H','XP925R','XP926R','TX225X','VN281J'];
 
-  // Update fleet page stat numbers by ID (reliable — no index guessing)
+  let avail = 0, inUse = 0;
+  FLEET.length = 0;
+  FLEET_ORDER.forEach(plate => {
+    const info = ccStatus ? ccStatus[plate] : null;
+    const isActive = info && info.active === true;
+    if(isActive) inUse++; else avail++;
+    FLEET.push({
+      plate,
+      stat: isActive ? 'inuse' : 'avail',
+      cust: isActive ? (info.name || null) : null,
+      days: isActive ? (info.inDate ? 'Since '+info.inDate : 'In use') : null,
+    });
+  });
+
+  const total = FLEET_ORDER.length;
+
+  // Update fleet page stat numbers by ID
   const nAvail = document.getElementById('fleet-n-avail');
   const nInUse = document.getElementById('fleet-n-inuse');
   const nTotal = document.getElementById('fleet-n-total');
@@ -2020,16 +2126,6 @@ function applyLiveCCStatus(ccStatus, ccInUse){
   if(ccInUseEl) ccInUseEl.textContent = inUse;
   if(ccTotalEl) ccTotalEl.textContent = total;
 
-  // Rebuild fleet cards with live data
-  FLEET.length = 0;
-  Object.entries(ccStatus).forEach(([plate, info])=>{
-    FLEET.push({
-      plate,
-      stat: info.active ? 'inuse' : 'avail',
-      cust: info.active ? info.name : null,
-      days: info.active ? (info.inDate ? 'Since '+info.inDate : 'In use') : null,
-    });
-  });
   renderFleetEnhanced();
   renderMiniCars();
 }
@@ -2053,18 +2149,33 @@ async function loadPartsReturn(){
     const res = await apiFetch('getPartsReturn');
     if(res && res.ok && Array.isArray(res.rows)){
       PARTS.length = 0;
-      res.rows.forEach(r => PARTS.push({
-        dt:     r[0] || '',
-        wo:     r[1] || '',
-        dealer: r[2] || '',
-        invoice:r[3] || '',
-        part:   r[4] || '',
-        qty:    r[5] || '',
-        reason: r[6] || '',
-        driver: r[7] || '',
-        tracking:r[8]|| '',
-        credit: r[9] || '',
-      }));
+      res.rows.forEach(r => {
+        // v13 getPartsReturn returns objects with named fields
+        // v12 returned raw arrays — handle both for backward compat
+        if(typeof r === 'object' && !Array.isArray(r) && r.returnDate !== undefined){
+          PARTS.push({
+            dt:      r.returnDate || '',
+            wo:      r.wo         || '',
+            dealer:  r.dealership || '',
+            invoice: r.invoice    || '',
+            part:    r.partNumber || '',
+            qty:     r.qty        || '',
+            reason:  r.reason     || '',
+            driver:  r.driver     || '',
+            tracking:r.tracking   || '',
+            credit:  r.creditStatus || '',
+            rowIndex:r.rowIndex   || 0,
+          });
+        } else {
+          // Legacy raw array format
+          PARTS.push({
+            dt:     r[0] || '', wo:     r[1] || '', dealer: r[2] || '',
+            invoice:r[3] || '', part:   r[4] || '', qty:    r[5] || '',
+            reason: r[6] || '', driver: r[7] || '', tracking:r[8]|| '',
+            credit: r[9] || '', rowIndex: 0,
+          });
+        }
+      });
       // Update pending count badge
       const pending = PARTS.filter(p=>(p.credit||'').toLowerCase().includes('pending')).length;
       document.querySelectorAll('.nav-badge.amber').forEach(el=>el.textContent=pending);
@@ -2669,22 +2780,76 @@ function toggleNSDate(){
 }
 
 /* ── SAVE PARTS LOG ─────────────────────────────── */
-function savePartsLog(){
+function openEditPartsRow(idx){
+  const p = PARTS[idx];
+  if(!p) return;
+  // Populate the parts-log-modal fields with existing data for editing
+  document.getElementById('pl-date').value   = p.dt   || '';
+  document.getElementById('pl-wo').value     = p.wo   || '';
+  document.getElementById('pl-dealer').value = p.dealer || '';
+  document.getElementById('pl-part').value   = p.part  || '';
+  // Store row index and part index for save
+  document.getElementById('pl-date').dataset.editRow  = p.rowIndex || 0;
+  document.getElementById('pl-date').dataset.editIdx  = idx;
+  // Set reason select
+  const rs = document.getElementById('pl-reason');
+  for(let o of rs.options) if(o.text === p.reason || o.value === p.reason) { rs.value = o.value; break; }
+  // Set driver select
+  const ds = document.getElementById('pl-driver');
+  for(let o of ds.options) if(o.text === p.driver || o.value === p.driver) { ds.value = o.value; break; }
+  document.querySelector('#parts-log-modal .modal-title').textContent = 'Edit parts return';
+  openModal('parts-log-modal');
+}
+
+async function savePartsLog(){
   const wo = document.getElementById('pl-wo').value.trim();
   const dealer = document.getElementById('pl-dealer').value.trim();
   if(!wo||!dealer){ toast('WO# and dealership are required','warn'); return; }
-  const today = todayVanDisplay();
-  PARTS.unshift({
-    dt: document.getElementById('pl-date').value || today,
-    wo, dealer,
-    part: document.getElementById('pl-part').value || '—',
-    reason: document.getElementById('pl-reason').value,
-    driver: document.getElementById('pl-driver').value,
-    credit: 'Pending',
-  });
-  renderParts();
-  toast(`Parts return logged — ${wo}`, 'success');
+
+  const dateInput = document.getElementById('pl-date');
+  const editRow   = parseInt(dateInput.dataset.editRow || 0);
+  // Convert yyyy-mm-dd from date input back to dd-MMM-yyyy for the sheet
+  let dateVal = dateInput.value || '';
+  if(dateVal && dateVal.match(/^\d{4}-\d{2}-\d{2}$/)){
+    const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const [y,m,d] = dateVal.split('-');
+    dateVal = `${d}-${MON[parseInt(m)-1]}-${y}`;
+  }
+  if(!dateVal) dateVal = todayVanDisplay();
+
+  const payload = {
+    editRow:      editRow >= 4 ? editRow : '',
+    returnDate:   dateVal,
+    wo,
+    dealership:   dealer,
+    invoice:      '',
+    partNumber:   document.getElementById('pl-part').value.trim() || '',
+    qty:          '1',
+    reason:       document.getElementById('pl-reason').value,
+    driver:       document.getElementById('pl-driver').value,
+    tracking:     '',
+    creditStatus: editRow >= 4 ? (PARTS.find(p=>p.rowIndex===editRow)?.credit || 'Pending') : 'Pending',
+  };
+
+  // Reset edit state
+  dateInput.dataset.editRow = '';
+  dateInput.dataset.editIdx = '';
+  document.querySelector('#parts-log-modal .modal-title').textContent = 'Log parts return';
+
   closeModal('parts-log-modal');
+
+  // Call API to persist to sheet
+  try {
+    const res = await apiFetch('savePartsReturn', payload);
+    if(res && res.ok){
+      toast(`Parts return ${editRow >= 4 ? 'updated' : 'logged'} — ${wo}`, 'success');
+      await loadPartsReturn(); // reload from sheet
+    } else {
+      toast('Save failed: '+(res?.error||'Unknown error'),'error');
+    }
+  } catch(e){
+    toast('Save failed — check connection','error');
+  }
 }
 
 /* ── SHORTCUTS MODAL BODY ────────────────────────── */
