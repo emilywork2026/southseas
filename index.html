@@ -1736,6 +1736,14 @@ async function editCalDate(rowIndex, source, currentDate, customerName){
   }
 }
 
+// Safe wrapper used by upcoming table rows (avoids quote escaping in onclick)
+function editCalDateByIdx(i){
+  const u = (window._upcomingRows||{})[i];
+  if(!u) return;
+  const dateStr = u.schedDate || (u.out !== 'TBD' ? u.out : '') || u.inD || '';
+  editCalDate(u.rowIndex||0, u.source||'WIP', dateStr, u.n||'');
+}
+
 document.getElementById('cal-prev').onclick = ()=>{ if(calMonth===0){calMonth=11;calYear--;}else calMonth--; renderCalendar(); };
 document.getElementById('cal-next').onclick = ()=>{ if(calMonth===11){calMonth=0;calYear++;}else calMonth++; renderCalendar(); };
 
@@ -1764,8 +1772,11 @@ function renderUpcomingTable(){
     return;
   }
 
-  document.getElementById('upcoming-tbody').innerHTML = upcoming.map(u => {
+  // Store jobs in a temp map so edit buttons can reference them safely
+  window._upcomingRows = {};
+  document.getElementById('upcoming-tbody').innerHTML = upcoming.map((u, i) => {
     const dateStr = u.schedDate || (u.out !== 'TBD' ? u.out : '') || u.inD || '';
+    window._upcomingRows[i] = u;
     return `<tr>
       <td class="mono">${dateStr}</td>
       <td><div class="j-name">${u.n}</div></td>
@@ -1774,8 +1785,7 @@ function renderUpcomingTable(){
       <td style="font-size:11px;color:var(--mut)">${u.body}</td>
       <td>${fmtDate(u.out)}</td>
       <td><button class="btn btn-ghost btn-sm" style="padding:2px 7px;font-size:11px"
-          onclick="editCalDate(${u.rowIndex||0},'${u.source||'WIP'}','${dateStr}','${(u.n||'').replace(/'/g,'')}')"
-        >✏️</button></td>
+          onclick="editCalDateByIdx(${i})">✏️</button></td>
     </tr>`;
   }).join('');
 }
