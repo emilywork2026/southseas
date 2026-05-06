@@ -148,9 +148,6 @@ html,body{height:100%;background:var(--bg);color:var(--tx);font-size:13px;line-h
 .s-approved{background:rgba(34,197,94,.15);color:#6ee7b7}
 .s-done{background:rgba(100,100,100,.18);color:#9ca3af}
 .s-cancel{background:rgba(239,68,68,.12);color:#f87171}
-/* Optgroup styling in filter dropdowns */
-optgroup{color:var(--mut);font-size:10px;font-style:normal;font-weight:600;text-transform:uppercase;letter-spacing:.3px}
-optgroup option{color:var(--tx);font-size:11.5px;font-weight:400;text-transform:none;letter-spacing:0}
 
 /* ── FILTER BAR ─────────────────────────────────── */
 .filter-bar{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--bdr);flex-wrap:wrap}
@@ -534,7 +531,7 @@ body.role-viewer #quick-bar{display:none!important}
 <div class="page active" id="page-dashboard">
   <div class="alert alert-warn" id="alert-noshow">
     <svg viewBox="0 0 24 24" fill="var(--red)"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
-    2 jobs need follow-up — No Show: Kim, Jinhyung · Rodrigues, Pablo
+    2 jobs need follow-up — check notifications
     <span class="alert-close" onclick="this.parentElement.remove()">✕</span>
   </div>
 
@@ -830,9 +827,9 @@ body.role-viewer #quick-bar{display:none!important}
     </div>
     <div class="modal-body">
       <div class="job-context-block" id="upd-context">
-        <div class="jcb-name" id="upd-name">Park, Sunwoo</div>
-        <div class="jcb-sub" id="upd-sub">WO-4412 · 2021 Honda Civic · 8KLM921</div>
-        <div class="jcb-tags"><span class="tag tag-icbc">ICBC</span><span class="pill s-wip" id="upd-current-status">WIP</span></div>
+        <div class="jcb-name" id="upd-name">—</div>
+        <div class="jcb-sub" id="upd-sub">—</div>
+        <div class="jcb-tags"><span class="tag tag-icbc" id="upd-tag-type" style="display:none">ICBC</span><span class="pill s-wip" id="upd-current-status"></span></div>
       </div>
 
       <div class="form-group">
@@ -1105,9 +1102,9 @@ body.role-viewer #quick-bar{display:none!important}
     <div class="modal-body">
       <div class="sched-confirm-note">Parts have arrived — confirm repair date with the customer and assign technicians. Both <strong>IN date</strong> and <strong>OUT estimate</strong> are required.</div>
       <div class="job-context-block">
-        <div class="jcb-name">Lee, So-Yeon</div>
-        <div class="jcb-sub">WO-4406 · 2019 Hyundai Elantra · SXM221</div>
-        <div class="jcb-tags"><span class="tag tag-icbc">ICBC</span><span class="pill s-parts">Parts arrived</span></div>
+        <div class="jcb-name" id="sched-job-name">—</div>
+        <div class="jcb-sub" id="sched-job-sub">—</div>
+        <div class="jcb-tags" id="sched-job-tags"></div>
       </div>
       <div class="form-row">
         <div class="form-group"><div class="form-label">Repair IN date *</div><input class="form-input" type="date" id="sched-in"/></div>
@@ -1277,7 +1274,6 @@ window.addEventListener('load',()=>{
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzoeiWcCMKCAVsxIx9JvQAST_ZnaZWu1Yl1Uxt8ZM6DswFjvx0JpBRA9MudsAku_qoRTQ/exec';
 
 const PILL_CLASS = {
-  // WIP statuses — exact sheet values
   'WIP':'s-wip','In Progress':'s-inprog','In progress':'s-inprog',
   'Ready for pickup':'s-ready','Ready for Pickup':'s-ready',
   'Parts arrived':'s-parts','Parts Arrived':'s-parts',
@@ -1286,7 +1282,8 @@ const PILL_CLASS = {
   'Towed IN':'s-towed','Towed In':'s-towed',
   'Outstanding Balance':'s-hold','On hold':'s-hold','On Hold':'s-hold',
   'Shop Change Request':'s-hold',
-  'Refix':'s-refix','Cancelled':'s-cancel','Total Loss':'s-cancel',
+  'Refix':'s-refix',
+  'Cancelled':'s-cancel','Total Loss':'s-cancel',
   'No show':'s-noshow','No Show':'s-noshow',
   'Estimate/Photo':'s-est','Estimate Pending Review':'s-est',
   'Estimate Approved':'s-approved',
@@ -1300,76 +1297,26 @@ const PILL_CLASS = {
   '6 – Scheduled':'s-sched',
   '9 – Picked Up / Closed':'s-done',
   'On Hold':'s-hold',
-  'Cancelled':'s-cancel',
-  'Total Loss':'s-cancel',
-  'Shop Change':'s-hold',
 };
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const DAYS   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
 /* ── SAMPLE DATA ───────────────────────────────── */
-const JOBS = [
-  {n:'Park, Sunwoo',v:'2021 Honda Civic',p:'8KLM921',wo:'WO-4412',cl:'IC-2025-441291',st:'WIP',out:'09-May-2026',cc:'VJ785L',type:'ICBC',inD:'01-May-2026',body:'Aashi',paint:'RC',email:'park.sunwoo@gmail.com',phone:'7788814412'},
-  {n:'Tremblay, Marie',v:'2019 Toyota RAV4',p:'KWX447',wo:'WO-4408',cl:'IC-2025-440027',st:'Parts ordered',out:'14-May-2026',cc:'TX235X',type:'ICBC',inD:'28-Apr-2026',body:'Nelson',paint:'Ami',email:'marie.t@gmail.com',phone:'6045550201'},
-  {n:'Nguyen, Thi Thu',v:'2022 Hyundai Tucson',p:'NPL382',wo:'WO-4415',cl:'',st:'Scheduled',out:'06-May-2026',cc:'',type:'Private',inD:'06-May-2026',body:'David',paint:'Katty',email:'',phone:'6045550314'},
-  {n:'Santos, Ricardo',v:'2020 Ford F-150',p:'KJB812',wo:'Private',cl:'',st:'Towed IN',out:'TBD',cc:'',type:'Private',inD:'03-May-2026',body:'—',paint:'—',email:'',phone:'7788815501'},
-  {n:'Chen, Wei',v:'2018 Mazda CX-5',p:'RTP559',wo:'WO-4401',cl:'IC-2025-438812',st:'Ready for pickup',out:'Today',cc:'VJ785L',type:'ICBC',inD:'22-Apr-2026',body:'RC',paint:'Nelson',email:'w.chen99@hotmail.com',phone:'6045550892'},
-  {n:'Brar, Jaspreet',v:'2023 Kia Sportage',p:'BXP201',wo:'WO-4399',cl:'IC-2025-437001',st:'On hold',out:'TBD',cc:'',type:'ICBC',inD:'18-Apr-2026',body:'Marco',paint:'Ammar',email:'jaspreet.b@outlook.com',phone:'7788816643'},
-  {n:'Kim, Jinhyung',v:'2022 Tesla Model Y',p:'LKT921',wo:'WO-4416',cl:'IC-2025-441500',st:'Scheduled',out:'08-May-2026',cc:'SB272H',type:'ICBC',inD:'05-May-2026',body:'Johnny',paint:'RC',email:'',phone:'7788817721'},
-  {n:'Okafor, Chidi',v:'2021 Subaru Outback',p:'BPN773',wo:'WO-4418',cl:'IC-2025-442001',st:'Towed IN',out:'TBD',cc:'',type:'ICBC',inD:'07-May-2026',body:'—',paint:'—',email:'cokafor@gmail.com',phone:'6045551122'},
-  {n:'Petrov, Alexei',v:'2020 BMW 330i',p:'JVQ412',wo:'WO-4403',cl:'',st:'In Progress',out:'10-May-2026',cc:'TN321R',type:'Private',inD:'26-Apr-2026',body:'David',paint:'Ami',email:'alex.petrov@gmail.com',phone:'7788813300'},
-  {n:'Lee, So-Yeon',v:'2019 Hyundai Elantra',p:'SXM221',wo:'WO-4406',cl:'IC-2025-439450',st:'Parts arrived',out:'12-May-2026',cc:'TX235X',type:'ICBC',inD:'29-Apr-2026',body:'Aashi',paint:'Nelson',email:'soyeon.l@gmail.com',phone:'6045559988'},
-];
+// ── All sample data cleared — populated exclusively from live Google Sheet ──
+const JOBS = [];   // filled by applyJobsFromSearch() after loadLiveData()
 
-const FLEET = [
-  {plate:'VN281J',stat:'avail',cust:null,days:null},
-  {plate:'TX225X',stat:'avail',cust:null,days:null},
-  {plate:'SB252H',stat:'avail',cust:null,days:null},
-  {plate:'LK853L',stat:'avail',cust:null,days:null},
-  {plate:'VJ785L',stat:'inuse',cust:'Park, Sunwoo',days:'Day 3 of ~8'},
-  {plate:'TX235X',stat:'inuse',cust:'Tremblay, Marie',days:'Day 6 of ~16'},
-  {plate:'TN321R',stat:'inuse',cust:'Petrov, Alexei',days:'Day 7 of ~14'},
-  {plate:'SB272H',stat:'inuse',cust:'Kim, Jinhyung',days:'Day 1'},
-  {plate:'XP925R',stat:'inuse',cust:'Lee, So-Yeon',days:'Day 4 of ~13'},
-  {plate:'XP926R',stat:'wait',cust:'Brar, Jaspreet (pending)',days:'Waiting for job approval'},
-];
+const FLEET = [];  // filled by applyLiveCCStatus() after getDashboard()
 
-const TECHS = [
-  {n:'Aashi',b:312,p:0},{n:'Nelson',b:188,p:241},{n:'RC',b:274,p:318},
-  {n:'David',b:198,p:0},{n:'Johnny',b:156,p:0},{n:'Katty',b:0,p:187},
-  {n:'Ami',b:0,p:143},{n:'Ammar Ali',b:0,p:211},{n:'Marco',b:134,p:0},{n:'John',b:78,p:54},
-];
+const TECHS = [];  // filled by applyLiveTechHours() after getDashboard()
 
-const PARTS = []; // populated from live sheet — see loadPartsReturn()
+const PARTS = [];  // filled by loadPartsReturn()
 
-const NOTIFS = [
-  {type:'warn',msg:'Park, Sunwoo — Ready for Pickup, courtesy car VJ785L still assigned',time:'Today 9:14 AM'},
-  {type:'info',msg:'Lee, So-Yeon — Parts arrived, schedule repair date',time:'Today 8:30 AM'},
-  {type:'warn',msg:'Kim, Jinhyung — No Show flagged, follow-up needed',time:'Yesterday 3:45 PM'},
-];
+const NOTIFS = []; // built by buildNotifsFromJobs() after JOBS is populated
 
-const CAL_EVENTS = {
-  '2026-05-01':[{t:'in',l:'Park IN'}],
-  '2026-05-03':[{t:'in',l:'Santos IN'}],
-  '2026-05-05':[{t:'sched',l:'Kim IN'},{t:'out',l:'Brar OUT?'}],
-  '2026-05-06':[{t:'in',l:'Nguyen IN'},{t:'out',l:'Nguyen OUT'}],
-  '2026-05-07':[{t:'in',l:'Okafor IN'}],
-  '2026-05-08':[{t:'out',l:'Kim OUT'},{t:'sched',l:'Lee IN'}],
-  '2026-05-09':[{t:'out',l:'Park OUT'}],
-  '2026-05-10':[{t:'out',l:'Petrov OUT'}],
-  '2026-05-12':[{t:'out',l:'Lee OUT'}],
-  '2026-05-14':[{t:'out',l:'Tremblay OUT'}],
-  '2026-05-19':[{t:'sched',l:'Fernandez IN'}],
-  '2026-05-22':[{t:'in',l:'Okafor follow-up'}],
-};
+const CAL_EVENTS = {}; // built by renderCalendarEvents() from live JOBS
 
-const UPCOMING = [
-  {dt:'05-May',n:'Kim, Jinhyung',v:'2022 Tesla Model Y',type:'ICBC',body:'Johnny',out:'08-May-2026'},
-  {dt:'06-May',n:'Nguyen, Thi Thu',v:'2022 Hyundai Tucson',type:'Private',body:'David',out:'06-May-2026'},
-  {dt:'07-May',n:'Okafor, Chidi',v:'2021 Subaru Outback',type:'ICBC',body:'—',out:'TBD'},
-  {dt:'08-May',n:'Lee, So-Yeon (sched)',v:'2019 Hyundai Elantra',type:'ICBC',body:'Aashi',out:'12-May-2026'},
-];
+const UPCOMING = []; // not used — renderUpcomingMini/Table read from JOBS directly
 
 /* ── HELPERS ────────────────────────────────────── */
 
@@ -1416,27 +1363,26 @@ function parseJobDate(s) {
 }
 function makePill(st){
   if(!st) return `<span class="pill s-hold">—</span>`;
-  // Direct lookup first
   if(PILL_CLASS[st]) return `<span class="pill ${PILL_CLASS[st]}">${st}</span>`;
-  // Fuzzy fallback for NJL stage strings and status variants not in PILL_CLASS
+  // Fuzzy fallback for NJL stage strings not in the lookup table
   const sl = st.toLowerCase();
   let cls = 's-hold';
-  if(sl.includes('picked up')||sl.includes('9 –')||sl.includes('closed')) cls='s-done';
-  else if(sl.includes('cancel')||sl.includes('total loss'))               cls='s-cancel';
-  else if(sl.includes('6 –')||sl.includes('schedul'))                     cls='s-sched';
-  else if(sl.includes('5 –')||sl.includes('parts arrived'))               cls='s-parts';
-  else if(sl.includes('4 –')||sl.includes('order'))                       cls='s-parts';
-  else if(sl.includes('3 –')||sl.includes('approved'))                    cls='s-approved';
+  if(sl.includes('picked up')||sl.includes('9 –')||sl.includes('closed'))  cls='s-done';
+  else if(sl.includes('cancel')||sl.includes('total loss'))                 cls='s-cancel';
+  else if(sl.includes('6 –')||sl.includes('schedul'))                      cls='s-sched';
+  else if(sl.includes('5 –')||sl.includes('parts arrived'))                cls='s-parts';
+  else if(sl.includes('4 –')||sl.includes('order'))                        cls='s-parts';
+  else if(sl.includes('3 –')||sl.includes('approved'))                     cls='s-approved';
   else if(sl.includes('2 –')||sl.includes('estimate sent')||sl.includes('pending')) cls='s-est';
-  else if(sl.includes('1 –')||sl.includes('new intake'))                  cls='s-towed';
-  else if(sl.includes('wip')||sl.includes('in progress'))                 cls='s-wip';
-  else if(sl.includes('towed'))                                           cls='s-towed';
-  else if(sl.includes('estimate')||sl.includes('photo'))                  cls='s-est';
-  else if(sl.includes('refix'))                                           cls='s-refix';
-  else if(sl.includes('no show'))                                         cls='s-noshow';
-  else if(sl.includes('outstanding')||sl.includes('balance'))             cls='s-hold';
-  else if(sl.includes('ready'))                                           cls='s-ready';
-  else if(sl.includes('parts'))                                           cls='s-parts';
+  else if(sl.includes('1 –')||sl.includes('new intake'))                   cls='s-towed';
+  else if(sl.includes('wip')||sl.includes('in progress'))                  cls='s-wip';
+  else if(sl.includes('towed'))                                            cls='s-towed';
+  else if(sl.includes('estimate')||sl.includes('photo'))                   cls='s-est';
+  else if(sl.includes('refix'))                                            cls='s-refix';
+  else if(sl.includes('no show'))                                          cls='s-noshow';
+  else if(sl.includes('outstanding')||sl.includes('balance'))              cls='s-hold';
+  else if(sl.includes('ready'))                                            cls='s-ready';
+  else if(sl.includes('parts'))                                            cls='s-parts';
   return `<span class="pill ${cls}">${st}</span>`;
 }
 function makePlate(p){
@@ -1637,14 +1583,37 @@ function renderMiniCars(){
 
 /* ── RENDER: UPCOMING MINI ──────────────────────── */
 function renderUpcomingMini(){
-  document.getElementById('upcoming-mini').innerHTML = UPCOMING.slice(0,3).map(u=>{
-    const [d,m] = u.dt.split('-');
+  const el = document.getElementById('upcoming-mini');
+  if(!el) return;
+  const now = nowVancouver();
+  const cutoff = new Date(now.getTime() + 45 * 86400000);
+  const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  const upcoming = JOBS.filter(j=>{
+    const sl = (j.st||'').toLowerCase();
+    if(sl.includes('picked up')||sl.includes('cancel')||sl.includes('total loss')) return false;
+    if(j.source==='Archive'||j.source==='Cancelled') return false;
+    // Use schedDate (NJL sched col) or inD as the IN date
+    const d = parseJobDate(j.schedDate) || parseJobDate(j.inD);
+    if(!d||isNaN(d.getTime())) return false;
+    return d >= now && d <= cutoff;
+  }).sort((a,b)=>{
+    const da = parseJobDate(a.schedDate)||parseJobDate(a.inD)||new Date(9e15);
+    const db = parseJobDate(b.schedDate)||parseJobDate(b.inD)||new Date(9e15);
+    return da-db;
+  }).slice(0,3);
+
+  if(!upcoming.length){
+    el.innerHTML = '<div style="padding:12px 0;text-align:center;color:var(--hint);font-size:12px">No upcoming jobs</div>';
+    return;
+  }
+  el.innerHTML = upcoming.map(u=>{
+    const d = parseJobDate(u.schedDate)||parseJobDate(u.inD);
+    const day = d ? String(d.getDate()).padStart(2,'0') : '--';
+    const mon = d ? MON[d.getMonth()] : '---';
     return `<div class="upcoming-item">
-      <div class="upcoming-date-box"><div class="udb-day">${d}</div><div class="udb-mon">${m}</div></div>
-      <div class="upcoming-info">
-        <div class="upcoming-name">${u.n}</div>
-        <div class="upcoming-veh">${u.v}</div>
-      </div>
+      <div class="upcoming-date-box"><div class="udb-day">${day}</div><div class="udb-mon">${mon}</div></div>
+      <div class="upcoming-info"><div class="upcoming-name">${u.n}</div><div class="upcoming-veh">${u.v}</div></div>
       ${makeTag(u.type)}
     </div>`;
   }).join('');
@@ -1663,14 +1632,10 @@ function filterJobs(){
   const to   = document.getElementById('f-to').value;
 
   filteredJobs = JOBS.filter(j=>{
-    // Text search across name, WO, plate, claim, vehicle, notes
     if(q && !(j.n+j.wo+j.p+j.cl+(j.v||'')+(j.notes||'')).toLowerCase().includes(q)) return false;
-    // Type
     if(type && j.type !== type) return false;
-    // Phone last-4
     if(ph && !(j.phone||'').endsWith(ph)) return false;
-    // Date range on IN date
-    if(from || to){
+    if(from||to){
       const d = parseJobDate(j.inD);
       if(d){
         const iso = d.toISOString().slice(0,10);
@@ -1678,75 +1643,28 @@ function filterJobs(){
         if(to   && iso > to)   return false;
       }
     }
-    // Status group matching — covers both WIP status strings and NJL stage strings
     if(st){
       const s = (j.st||'').toLowerCase();
       switch(st){
-        case 'new_intake':
-          // NJL stage "1 – New Intake" and WIP "Estimate/Photo", "Towed IN" new arrivals without WO
-          if(!s.includes('new intake') && !s.includes('1 –') &&
-             !s.includes('1–')) return false;
-          break;
-        case 'towed':
-          if(!s.includes('towed')) return false;
-          break;
-        case 'estimate':
-          // Estimate/Photo, Estimate Pending Review — but NOT Estimate Approved
-          if(!s.includes('estimate') && !s.includes('photo')) return false;
-          if(s.includes('approved')) return false;
-          break;
-        case 'est_sent':
-          if(!s.includes('2 –') && !s.includes('2–') &&
-             !s.includes('estimate sent') && !s.includes('pending review') &&
-             !s.includes('pending')) return false;
-          break;
-        case 'est_approved':
-          if(!s.includes('approved') && !s.includes('3 –') && !s.includes('3–')) return false;
-          break;
-        case 'parts_ordered':
-          if(!s.includes('order') && !s.includes('4 –') && !s.includes('4–')) return false;
-          if(s.includes('arrived')) return false;
-          break;
-        case 'parts_arrived':
-          if(!s.includes('arrived') && !s.includes('5 –') && !s.includes('5–')) return false;
-          break;
-        case 'scheduled':
-          if(!s.includes('schedule') && !s.includes('6 –') && !s.includes('6–')) return false;
-          break;
-        case 'wip':
-          if(!s.includes('wip') && !s.includes('in progress')) return false;
-          break;
-        case 'outstanding':
-          if(!s.includes('outstanding') && !s.includes('balance') &&
-             !s.includes('ready for pickup')) return false;
-          break;
-        case 'refix':
-          if(!s.includes('refix') && !s.includes('comeback')) return false;
-          break;
-        case 'no_show':
-          if(!s.includes('no show')) return false;
-          break;
-        case 'on_hold':
-          if(!s.includes('on hold') && !s.includes('hold')) return false;
-          break;
-        case 'ready':
-          if(!s.includes('ready for pickup')) return false;
-          break;
-        case 'picked_up':
-          if(!s.includes('picked up') && !s.includes('9 –') && !s.includes('9–')) return false;
-          break;
-        case 'cancelled':
-          if(!s.includes('cancel')) return false;
-          break;
-        case 'total_loss':
-          if(!s.includes('total loss')) return false;
-          break;
-        case 'shop_change':
-          if(!s.includes('shop change')) return false;
-          break;
-        default:
-          // Fallback: exact match for any unrecognised value
-          if(j.st !== st) return false;
+        case 'new_intake':    if(!s.includes('new intake')&&!s.includes('1 –')&&!s.includes('1–')) return false; break;
+        case 'towed':         if(!s.includes('towed')) return false; break;
+        case 'estimate':      if((!s.includes('estimate')&&!s.includes('photo'))||s.includes('approved')) return false; break;
+        case 'est_sent':      if(!s.includes('2 –')&&!s.includes('2–')&&!s.includes('estimate sent')&&!s.includes('pending review')&&!s.includes('pending')) return false; break;
+        case 'est_approved':  if(!s.includes('approved')&&!s.includes('3 –')&&!s.includes('3–')) return false; break;
+        case 'parts_ordered': if((!s.includes('order')&&!s.includes('4 –')&&!s.includes('4–'))||s.includes('arrived')) return false; break;
+        case 'parts_arrived': if(!s.includes('arrived')&&!s.includes('5 –')&&!s.includes('5–')) return false; break;
+        case 'scheduled':     if(!s.includes('schedule')&&!s.includes('6 –')&&!s.includes('6–')) return false; break;
+        case 'wip':           if(!s.includes('wip')&&!s.includes('in progress')) return false; break;
+        case 'outstanding':   if(!s.includes('outstanding')&&!s.includes('balance')) return false; break;
+        case 'refix':         if(!s.includes('refix')&&!s.includes('comeback')) return false; break;
+        case 'no_show':       if(!s.includes('no show')) return false; break;
+        case 'on_hold':       if(!s.includes('on hold')&&!s.includes('hold')) return false; break;
+        case 'ready':         if(!s.includes('ready for pickup')) return false; break;
+        case 'picked_up':     if(!s.includes('picked up')&&!s.includes('9 –')&&!s.includes('9–')) return false; break;
+        case 'cancelled':     if(!s.includes('cancel')) return false; break;
+        case 'total_loss':    if(!s.includes('total loss')) return false; break;
+        case 'shop_change':   if(!s.includes('shop change')) return false; break;
+        default:              if(j.st !== st) return false;
       }
     }
     return true;
@@ -1837,16 +1755,39 @@ document.getElementById('cal-next').onclick = ()=>{ if(calMonth===11){calMonth=0
 
 /* ── RENDER: UPCOMING TABLE ─────────────────────── */
 function renderUpcomingTable(){
-  document.getElementById('upcoming-tbody').innerHTML = UPCOMING.map(u=>`
-    <tr>
-      <td class="mono">${u.dt}</td>
+  const now = nowVancouver();
+  const cutoff = new Date(now.getTime() + 60 * 86400000);
+
+  const upcoming = JOBS.filter(j=>{
+    const sl = (j.st||'').toLowerCase();
+    if(sl.includes('picked up')||sl.includes('cancel')||sl.includes('total loss')) return false;
+    if(j.source==='Archive'||j.source==='Cancelled') return false;
+    const d = parseJobDate(j.schedDate)||parseJobDate(j.inD);
+    if(!d||isNaN(d.getTime())) return false;
+    return d >= now && d <= cutoff;
+  }).sort((a,b)=>{
+    const da = parseJobDate(a.schedDate)||parseJobDate(a.inD)||new Date(9e15);
+    const db = parseJobDate(b.schedDate)||parseJobDate(b.inD)||new Date(9e15);
+    return da-db;
+  });
+
+  if(!upcoming.length){
+    document.getElementById('upcoming-tbody').innerHTML =
+      `<tr><td colspan="6" style="padding:20px;text-align:center;color:var(--hint);font-size:12px">No upcoming jobs — data loads after login</td></tr>`;
+    return;
+  }
+  document.getElementById('upcoming-tbody').innerHTML = upcoming.map(u=>{
+    // Show IN/sched date in the date column — NOT the out/completion date
+    const inDateStr = u.schedDate || u.inD || '';
+    return `<tr>
+      <td class="mono">${inDateStr}</td>
       <td><div class="j-name">${u.n}</div></td>
       <td style="font-size:11px;color:var(--mut)">${u.v}</td>
       <td>${makeTag(u.type)}</td>
       <td style="font-size:11px;color:var(--mut)">${u.body}</td>
       <td>${fmtDate(u.out)}</td>
-    </tr>
-  `).join('');
+    </tr>`;
+  }).join('');
 }
 
 /* ── RENDER: FLEET ──────────────────────────────── */
@@ -1950,18 +1891,48 @@ function renderParts(){
 
 /* ── RENDER: NOTIFICATIONS ──────────────────────── */
 function renderNotifs(){
-  document.getElementById('notif-list').innerHTML = NOTIFS.map(n=>`
-    <div class="alert ${n.type==='warn'?'alert-warn':'alert-info'}" style="margin-bottom:8px">
+  document.getElementById('notif-list').innerHTML = NOTIFS.length ? NOTIFS.map((n,i)=>`
+    <div class="alert ${n.type==='warn'?'alert-warn':'alert-info'}" style="margin-bottom:8px;${n.jobIdx!==undefined?'cursor:pointer':''}"
+         onclick="${n.jobIdx!==undefined?`closeModal('notif-modal');openUpdateModalByJob(${n.jobIdx})`:''}">
       <svg viewBox="0 0 24 24" fill="${n.type==='warn'?'var(--red)':'none'}" stroke="${n.type==='warn'?'none':'#93c5fd'}" stroke-width="2" width="13" height="13">
         ${n.type==='warn'?'<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>':'<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>'}
       </svg>
-      <div style="flex:1">
-        <div>${n.msg}</div>
-        <div style="font-size:10px;opacity:.6;margin-top:2px">${n.time}</div>
+      <div style="flex:1;min-width:0">
+        <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${n.msg}</div>
+        <div style="font-size:10px;opacity:.6;margin-top:2px;display:flex;gap:8px;align-items:center">
+          <span>${n.time}</span>
+          ${n.jobIdx!==undefined?'<span style="color:var(--acc2);font-size:10px">Tap to open →</span>':''}
+        </div>
       </div>
-      <span class="alert-close" onclick="this.parentElement.remove();updateNotifCount()">✕</span>
+      <span class="alert-close" onclick="event.stopPropagation();this.parentElement.remove();updateNotifCount()">✕</span>
     </div>
-  `).join('');
+  `).join('') : '<div style="padding:20px;text-align:center;color:var(--hint);font-size:12px">No notifications</div>';
+}
+
+function buildNotifsFromJobs(){
+  NOTIFS.length = 0;
+  JOBS.forEach((j,idx)=>{
+    const sl = (j.st||'').toLowerCase();
+    if(sl.includes('no show'))
+      NOTIFS.push({type:'warn',msg:`${j.n} — No Show flagged, follow-up needed`,time:'Recent',jobIdx:idx});
+    if(sl.includes('parts arrived'))
+      NOTIFS.push({type:'info',msg:`${j.n} — Parts arrived, ready to schedule`,time:'Recent',jobIdx:idx});
+    if((sl.includes('ready for pickup')||sl.includes('outstanding balance'))&&j.cc&&j.cc.length>3)
+      NOTIFS.push({type:'warn',msg:`${j.n} — ${j.st}, courtesy car ${j.cc} still assigned`,time:'Recent',jobIdx:idx});
+    if(j.out&&j.out!=='TBD'&&j.out!=='Today'&&!sl.includes('picked up')&&!sl.includes('cancel')){
+      const outD=parseJobDate(j.out),nowD=nowVancouver();
+      if(outD&&outD<=nowD&&sl.includes('wip'))
+        NOTIFS.push({type:'warn',msg:`${j.n} — OUT date passed, still WIP`,time:j.out,jobIdx:idx});
+    }
+  });
+  NOTIFS.sort((a,b)=>(a.type==='warn'?0:1)-(b.type==='warn'?0:1));
+  if(NOTIFS.length>8) NOTIFS.splice(8);
+  renderNotifs();
+  updateNotifCount();
+}
+
+function openUpdateModalByJob(idx){
+  const j=JOBS[idx]; if(!j) return; openUpdateModal(j);
 }
 
 function updateNotifCount(){
@@ -2016,7 +1987,7 @@ async function loadLiveData(force=false){
   try {
     // Fire both calls in parallel — search gives all jobs, getDashboard gives counts/CC/nextWeek
     const [searchRes, dashRes] = await Promise.all([
-      apiFetch('search'),
+      apiFetch('search', {query:'', filter:'all'}),
       apiFetch('getDashboard'),
     ]);
 
@@ -2103,6 +2074,7 @@ function applyJobsFromSearch(rawJobs){
   renderUpcomingMini();
   renderUpcomingTable();
   renderCalendarEvents();
+  if(typeof buildNotifsFromJobs === 'function') buildNotifsFromJobs();
 }
 
 function applyDashboardCounts(counts){
@@ -2140,41 +2112,26 @@ function applyDashboardCounts(counts){
 }
 
 function applyLiveCCStatus(ccStatus, ccInUse){
-  // ccStatus: { plate: {active, name, vehicle, status, inDate, wo} }
-  const avail = Object.values(ccStatus).filter(c=>!c.active).length;
-  const inUse = Object.values(ccStatus).filter(c=> c.active).length;
-  const total = Object.keys(ccStatus).length;
-
-  // Update fleet page stat numbers by ID (reliable — no index guessing)
-  const nAvail = document.getElementById('fleet-n-avail');
-  const nInUse = document.getElementById('fleet-n-inuse');
-  const nTotal = document.getElementById('fleet-n-total');
-  if(nAvail) nAvail.textContent = avail;
-  if(nInUse) nInUse.textContent = inUse;
-  if(nTotal) nTotal.textContent = total;
-
-  // Nav badge
-  const navBadge = document.getElementById('nav-cars-avail');
-  if(navBadge) navBadge.textContent = avail;
-
-  // Update dashboard CC mini by ID
-  const ccAvailEl = document.getElementById('cc-num-avail');
-  const ccInUseEl = document.getElementById('cc-num-inuse');
-  const ccTotalEl = document.getElementById('cc-num-total');
-  if(ccAvailEl) ccAvailEl.textContent = avail;
-  if(ccInUseEl) ccInUseEl.textContent = inUse;
-  if(ccTotalEl) ccTotalEl.textContent = total;
-
-  // Rebuild fleet cards with live data
+  const FLEET_ORDER = ['VJ785L','TX235X','SB272H','LK853L',
+                       'TN321R','SB252H','XP925R','XP926R','TX225X','VN281J'];
+  let avail=0, inUse=0;
   FLEET.length = 0;
-  Object.entries(ccStatus).forEach(([plate, info])=>{
-    FLEET.push({
-      plate,
-      stat: info.active ? 'inuse' : 'avail',
-      cust: info.active ? info.name : null,
-      days: info.active ? (info.inDate ? 'Since '+info.inDate : 'In use') : null,
-    });
+  FLEET_ORDER.forEach(plate=>{
+    const info = ccStatus ? ccStatus[plate] : null;
+    const isActive = info && info.active === true;
+    if(isActive) inUse++; else avail++;
+    FLEET.push({plate, stat:isActive?'inuse':'avail',
+      cust:isActive?(info.name||null):null,
+      days:isActive?(info.inDate?'Since '+info.inDate:'In use'):null});
   });
+  const total = FLEET_ORDER.length;
+  const nAvail=document.getElementById('fleet-n-avail'); if(nAvail) nAvail.textContent=avail;
+  const nInUse=document.getElementById('fleet-n-inuse'); if(nInUse) nInUse.textContent=inUse;
+  const nTotal=document.getElementById('fleet-n-total'); if(nTotal) nTotal.textContent=total;
+  const navBadge=document.getElementById('nav-cars-avail'); if(navBadge) navBadge.textContent=avail;
+  const ccA=document.getElementById('cc-num-avail'); if(ccA) ccA.textContent=avail;
+  const ccI=document.getElementById('cc-num-inuse'); if(ccI) ccI.textContent=inUse;
+  const ccT=document.getElementById('cc-num-total'); if(ccT) ccT.textContent=total;
   renderFleetEnhanced();
   renderMiniCars();
 }
@@ -2198,26 +2155,24 @@ async function loadPartsReturn(){
     const res = await apiFetch('getPartsReturn');
     if(res && res.ok && Array.isArray(res.rows)){
       PARTS.length = 0;
-      res.rows.forEach(r => PARTS.push({
-        dt:     r[0] || '',
-        wo:     r[1] || '',
-        dealer: r[2] || '',
-        invoice:r[3] || '',
-        part:   r[4] || '',
-        qty:    r[5] || '',
-        reason: r[6] || '',
-        driver: r[7] || '',
-        tracking:r[8]|| '',
-        credit: r[9] || '',
-      }));
-      // Update pending count badge
+      res.rows.forEach(r=>{
+        // v13 returns named-field objects; v12 returned raw arrays
+        if(typeof r === 'object' && !Array.isArray(r) && r.returnDate !== undefined){
+          PARTS.push({dt:r.returnDate||'',wo:r.wo||'',dealer:r.dealership||'',
+            invoice:r.invoice||'',part:r.partNumber||'',qty:r.qty||'',
+            reason:r.reason||'',driver:r.driver||'',tracking:r.tracking||'',
+            credit:r.creditStatus||'',rowIndex:r.rowIndex||0});
+        } else {
+          PARTS.push({dt:r[0]||'',wo:r[1]||'',dealer:r[2]||'',invoice:r[3]||'',
+            part:r[4]||'',qty:r[5]||'',reason:r[6]||'',driver:r[7]||'',
+            tracking:r[8]||'',credit:r[9]||'',rowIndex:0});
+        }
+      });
       const pending = PARTS.filter(p=>(p.credit||'').toLowerCase().includes('pending')).length;
       document.querySelectorAll('.nav-badge.amber').forEach(el=>el.textContent=pending);
       renderParts();
     }
-  } catch(e){
-    console.warn('loadPartsReturn:', e);
-  }
+  } catch(e){ console.warn('loadPartsReturn:',e); }
 }
 
 // Build calendar events from live JOBS
