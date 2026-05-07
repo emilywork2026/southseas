@@ -1361,6 +1361,15 @@ function parseJobDate(s) {
   if (iso) return new Date(+iso[1], +iso[2]-1, +iso[3]);
   return null;
 }
+  function isoToSheetDate(iso) {
+  // Converts "2026-05-11" → "11-May-2026" (sheet storage format)
+  // MUST be called on any date from <input type="date"> before sending to Apps Script
+  if (!iso) return '';
+  const m = String(iso).trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return iso; // already dd-MMM-yyyy — pass through unchanged
+  const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return String(+m[3]).padStart(2,'0') + '-' + MON[+m[2]-1] + '-' + m[1];
+}
 function makePill(st){
   if(!st) return `<span class="pill s-hold">—</span>`;
   if(PILL_CLASS[st]) return `<span class="pill ${PILL_CLASS[st]}">${st}</span>`;
@@ -2457,8 +2466,8 @@ function saveUpdate(){
 
   const extras = {
     source:      _selectedJob?.source    || 'WIP',
-    outDate:     document.getElementById('upd-out').value      || '',
-    schedDate:   document.getElementById('upd-sched').value    || '',
+    outDate:     isoToSheetDate(document.getElementById('upd-out').value   || ''),
+    schedDate:   isoToSheetDate(document.getElementById('upd-sched').value || ''),
     payment:     document.getElementById('upd-payment').value  || '',
     cc:          document.getElementById('upd-cc').value       || '',
     bhrs:        document.getElementById('upd-bhrs').value     || '',
@@ -2499,8 +2508,8 @@ function saveIntake(){
     phone:     document.getElementById('int-phone').value.trim(),
     vehicle:   document.getElementById('int-vehicle').value.trim(),
     plate:     document.getElementById('int-plate').value.trim().toUpperCase(),
-    inDate:    document.getElementById('int-in').value,
-    schedDate: document.getElementById('int-sched').value,
+    inDate:    isoToSheetDate(document.getElementById('int-in').value   || ''),
+    schedDate: isoToSheetDate(document.getElementById('int-sched').value || ''),
     cc:        document.getElementById('int-cc').value,
     bodyTech:  document.querySelector('#int-body-picker .tech-btn.active')?.textContent || '',
     paintTech: document.querySelector('#int-paint-picker .tech-btn.active')?.textContent || '',
