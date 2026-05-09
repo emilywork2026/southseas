@@ -1272,7 +1272,7 @@ window.addEventListener('load',()=>{
 });
 
 /* ── CONSTANTS ─────────────────────────────────── */
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzqWuK7zaxmN_h4XpyZaxPP09sSccjexNgTMYKtMoVPKMms3G1bRNsJ15tl9cj9bryF/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxfxKMAbFsU1sUmDHAmQR9ptLN91ePFNLkiRRpdEOdI8RmHpdKmg50wVR_NJ9_ezfwIEA/exec';
 
 const PILL_CLASS = {
   'WIP':'s-wip','In Progress':'s-inprog','In progress':'s-inprog',
@@ -1687,7 +1687,7 @@ function filterJobs(){
         case 'est_approved':  if(!s.includes('approved')&&!s.includes('3 –')&&!s.includes('3–')) return false; break;
         case 'parts_ordered': if((!s.includes('order')&&!s.includes('4 –')&&!s.includes('4–'))||s.includes('arrived')) return false; break;
         case 'parts_arrived': if(!s.includes('arrived')&&!s.includes('5 –')&&!s.includes('5–')) return false; break;
-        case 'scheduled':     if(!s.includes('schedule')&&!s.includes('6 –')&&!s.includes('6–')) return false; break;
+        case 'scheduled':     if(!s.includes('schedule')&&!s.includes('6 –')&&!s.includes('6–')) return false; if(s.includes('picked up')||s.includes('9 –')||s.includes('cancel')) return false; break;
         case 'wip':           if(!s.includes('wip')&&!s.includes('in progress')) return false; break;
         case 'outstanding':   if(!s.includes('outstanding')&&!s.includes('balance')) return false; break;
         case 'refix':         if(!s.includes('refix')&&!s.includes('comeback')) return false; break;
@@ -2289,20 +2289,28 @@ function renderCalendarEvents(){
   JOBS.forEach(j=>{
     function addEv(dateStr, type, label){
       if(!dateStr || dateStr==='TBD') return;
-      // Convert dd-MMM-yyyy to yyyy-mm-dd key
+      const s = String(dateStr).trim();
+      let key = null;
       const MONTHS={Jan:'01',Feb:'02',Mar:'03',Apr:'04',May:'05',Jun:'06',
                     Jul:'07',Aug:'08',Sep:'09',Oct:'10',Nov:'11',Dec:'12'};
-      const m = dateStr.match(/^(\d{1,2})-([A-Za-z]{3})-(\d{4})/);
-      if(!m) return;
-      const key = `${m[3]}-${MONTHS[m[2]]||'01'}-${String(+m[1]).padStart(2,'0')}`;
+      // dd-MMM-yyyy or d-MMM-yyyy (sheet format)
+      const m1 = s.match(/^(\d{1,2})-([A-Za-z]{3})-(\d{4})/);
+      if(m1) key = m1[3]+'-'+(MONTHS[m1[2]]||'01')+'-'+String(+m1[1]).padStart(2,'0');
+      // ISO yyyy-mm-dd fallback
+      if(!key){ const m2 = s.match(/^(\d{4})-(\d{2})-(\d{2})/); if(m2) key = m2[1]+'-'+m2[2]+'-'+m2[3]; }
+      if(!key) return;
       if(!CAL_EVENTS[key]) CAL_EVENTS[key]=[];
-      // Avoid duplicates
       if(!CAL_EVENTS[key].some(e=>e.l===label)) CAL_EVENTS[key].push({t:type,l:label});
     }
     const shortName = j.n.split(',')[0]; // last name only for space
     addEv(j.inD,       'in',    shortName+' IN');
     addEv(j.out,       'out',   shortName+' OUT');
     addEv(j.schedDate, 'sched', shortName+' sched');
+    // WIP scheduled jobs: OUT col = repair date → also mark as sched dot
+    const stl = (j.st||'').toLowerCase();
+    if(j.source==='WIP' && (stl.includes('schedule')||stl.includes('wip')||stl.includes('parts arrived')) && j.out && j.out!=='TBD'){
+      addEv(j.out, 'sched', shortName+' sched');
+    }
   });
 
   renderCalendar();
@@ -2701,6 +2709,16 @@ if(!getSession()) {
 setInterval(()=>{
   if(!document.hidden) loadLiveData();
 }, 5 * 60 * 1000);
+
+// Fallback: if calendar is empty 3s after load, retry renderCalendarEvents
+// (handles race condition where cal renders before JOBS is populated)
+setTimeout(()=>{
+  const hasEvents = Object.keys(CAL_EVENTS).length > 0;
+  if(!hasEvents && JOBS.length > 0){
+    console.log('[Calendar] Retry: JOBS loaded but CAL_EVENTS empty — re-rendering');
+    renderCalendarEvents();
+  }
+}, 3000);
 
 // Show keyboard shortcut hint in topbar on ?
 document.addEventListener('keydown', e=>{
