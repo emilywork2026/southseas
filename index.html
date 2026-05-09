@@ -1272,7 +1272,7 @@ window.addEventListener('load',()=>{
 });
 
 /* ── CONSTANTS ─────────────────────────────────── */
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzqWuK7zaxmN_h4XpyZaxPP09sSccjexNgTMYKtMoVPKMms3G1bRNsJ15tl9cj9bryF/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxfxKMAbFsU1sUmDHAmQR9ptLN91ePFNLkiRRpdEOdI8RmHpdKmg50wVR_NJ9_ezfwIEA/exec';
 
 const PILL_CLASS = {
   'WIP':'s-wip','In Progress':'s-inprog','In progress':'s-inprog',
@@ -1436,8 +1436,9 @@ function navTo(pageId, triggerEl){
   const navEl = triggerEl || document.querySelector(`.nav-item[data-page="${pageId}"]`);
   if(navEl) navEl.classList.add('active');
 
-  // Re-render calendar when navigating to schedule (ensures dots show after data loads)
+  // Re-render on navigate to ensure live data shows (handles async load timing)
   if(pageId==='schedule' && typeof renderCalendarEvents === 'function') renderCalendarEvents();
+  if(pageId==='cars' && typeof renderFleetEnhanced === 'function') renderFleetEnhanced();
 }
 
 document.querySelectorAll('.nav-item').forEach(item=>{
@@ -2183,6 +2184,8 @@ function applyJobsFromSearch(rawJobs){
   renderUpcomingTable();
   renderCalendarEvents();
   if(typeof buildNotifsFromJobs === 'function') buildNotifsFromJobs();
+  // Compute CC status from JOBS if getDashboard hasn't populated FLEET yet
+  if(FLEET.length === 0) buildCCStatusFromJobs();
 }
 
 function applyDashboardCounts(counts){
@@ -2971,6 +2974,32 @@ document.querySelector('#page-parts .card-action').addEventListener('click', ope
     if(acts) acts.insertBefore(btn, acts.firstChild);
   }
 })();
+// Build CC status from JOBS array (fallback when getDashboard hasn't returned yet)
+function buildCCStatusFromJobs(){
+  const CC_ORDER = ['VJ785L','TX235X','SB272H','LK853L','TN321R','SB252H','XP925R','XP926R','TX225X','VN281J'];
+  const plateMap = {};
+  CC_ORDER.forEach(p => { plateMap[p] = { anyActive: false, info: null }; });
+
+  JOBS.forEach(j => {
+    if(!j.cc || j.source === 'Archive' || j.source === 'Cancelled') return;
+    const sl = (j.st||'').toLowerCase();
+    const isClosed = sl.includes('picked up') || sl.includes('cancel') || sl.includes('total loss');
+    if(!isClosed && plateMap[j.cc]) {
+      plateMap[j.cc].anyActive = true;
+      if(!plateMap[j.cc].info) plateMap[j.cc].info = { name: j.n, vehicle: j.v, status: j.st, inDate: j.inD, wo: j.wo };
+    }
+  });
+
+  const fakeCCStatus = {};
+  CC_ORDER.forEach(plate => {
+    const pm = plateMap[plate];
+    fakeCCStatus[plate] = pm.anyActive
+      ? { active: true, ...pm.info }
+      : { active: false };
+  });
+  applyLiveCCStatus(fakeCCStatus, {});
+}
+
 function renderFleetEnhanced(){
   const el = document.getElementById('fleet-grid');
   if(!el) return;
