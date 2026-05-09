@@ -1362,6 +1362,16 @@ function parseJobDate(s) {
   if (iso) return new Date(+iso[1], +iso[2]-1, +iso[3]);
   return null;
 }
+
+// Get the upcoming/schedule date for a job
+// WIP jobs: OUT col = scheduled repair date
+// NJL jobs: schedDate col = scheduled repair date
+function getUpcomingDate(j){
+  return parseJobDate(j.schedDate)
+      || (j.source==='WIP' ? parseJobDate(j.out) : null)
+      || parseJobDate(j.inD);
+}
+
   function isoToSheetDate(iso) {
   // Converts "2026-05-11" → "11-May-2026" (sheet storage format)
   // MUST be called on any date from <input type="date"> before sending to Apps Script
@@ -1371,6 +1381,20 @@ function parseJobDate(s) {
   const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   return String(+m[3]).padStart(2,'0') + '-' + MON[+m[2]-1] + '-' + m[1];
 }
+
+// Defensive parts date formatter — handles raw JS Date strings from Sheets
+function fmtPartsDate(s){
+  if(!s) return '—';
+  const str = String(s).trim();
+  if(str.match(/^\d{1,2}-[A-Za-z]{3}-\d{4}$/)) return str; // already dd-MMM-yyyy
+  const d = parseJobDate(str);
+  if(d && !isNaN(d.getTime())){
+    const M=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return String(d.getDate()).padStart(2,'0')+'-'+M[d.getMonth()]+'-'+d.getFullYear();
+  }
+  return str;
+}
+
 function makePill(st){
   if(!st) return `<span class="pill s-hold">—</span>`;
   if(PILL_CLASS[st]) return `<span class="pill ${PILL_CLASS[st]}">${st}</span>`;
@@ -1604,12 +1628,12 @@ function renderUpcomingMini(){
     if(sl.includes('picked up')||sl.includes('cancel')||sl.includes('total loss')) return false;
     if(j.source==='Archive'||j.source==='Cancelled') return false;
     // Use schedDate (NJL sched col) or inD as the IN date
-    const d = parseJobDate(j.schedDate) || parseJobDate(j.inD);
+    const d = getUpcomingDate(j);
     if(!d||isNaN(d.getTime())) return false;
     return d >= now && d <= cutoff;
   }).sort((a,b)=>{
-    const da = parseJobDate(a.schedDate)||parseJobDate(a.inD)||new Date(9e15);
-    const db = parseJobDate(b.schedDate)||parseJobDate(b.inD)||new Date(9e15);
+    const da = getUpcomingDate(a)||new Date(9e15);
+    const db = getUpcomingDate(b)||new Date(9e15);
     return da-db;
   }).slice(0,3);
 
@@ -1618,7 +1642,7 @@ function renderUpcomingMini(){
     return;
   }
   el.innerHTML = upcoming.map(u=>{
-    const d = parseJobDate(u.schedDate)||parseJobDate(u.inD);
+    const d = getUpcomingDate(u);
     const day = d ? String(d.getDate()).padStart(2,'0') : '--';
     const mon = d ? MON[d.getMonth()] : '---';
     return `<div class="upcoming-item">
@@ -1772,12 +1796,12 @@ function renderUpcomingTable(){
     const sl = (j.st||'').toLowerCase();
     if(sl.includes('picked up')||sl.includes('cancel')||sl.includes('total loss')) return false;
     if(j.source==='Archive'||j.source==='Cancelled') return false;
-    const d = parseJobDate(j.schedDate)||parseJobDate(j.inD);
+    const d = getUpcomingDate(j);
     if(!d||isNaN(d.getTime())) return false;
     return d >= now && d <= cutoff;
   }).sort((a,b)=>{
-    const da = parseJobDate(a.schedDate)||parseJobDate(a.inD)||new Date(9e15);
-    const db = parseJobDate(b.schedDate)||parseJobDate(b.inD)||new Date(9e15);
+    const da = getUpcomingDate(a)||new Date(9e15);
+    const db = getUpcomingDate(b)||new Date(9e15);
     return da-db;
   });
 
@@ -1788,7 +1812,8 @@ function renderUpcomingTable(){
   }
   document.getElementById('upcoming-tbody').innerHTML = upcoming.map(u=>{
     // Show IN/sched date in the date column — NOT the out/completion date
-    const inDateStr = u.schedDate || u.inD || '';
+    const d_disp = getUpcomingDate(u);
+    const inDateStr = d_disp ? String(d_disp.getDate()).padStart(2,'0')+'-'+['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d_disp.getMonth()]+'-'+d_disp.getFullYear() : (u.schedDate||u.inD||'TBD');
     return `<tr>
       <td class="mono">${inDateStr}</td>
       <td><div class="j-name">${u.n}</div></td>
@@ -1872,7 +1897,7 @@ function renderParts(){
     const wo = p.wo || '—';
     const hasTracking = p.tracking && p.tracking.trim();
     return `<tr>
-      <td class="mono" style="color:var(--acc);font-size:11px">${p.dt||'—'}</td>
+      <td class="mono" style="color:var(--acc);font-size:11px">${fmtPartsDate(p.dt)}</td>
       <td><div class="mono">${wo}</div></td>
       <td style="font-size:12px;color:var(--tx)">${p.dealer||'—'}</td>
       <td class="mono" style="font-size:10.5px;color:var(--acc2)">${p.part||'—'}</td>
@@ -2207,6 +2232,10 @@ function renderCalendarEvents(){
     addEv(j.inD,       'in',    shortName+' IN');
     addEv(j.out,       'out',   shortName+' OUT');
     addEv(j.schedDate, 'sched', shortName+' sched');
+    // WIP jobs: OUT col = scheduled repair date — also mark as sched
+    if(j.source==='WIP' && j.out && j.out!=='TBD' && j.out!==j.schedDate){
+      addEv(j.out, 'sched', shortName+' sched');
+    }
   });
 
   renderCalendar();
