@@ -904,7 +904,7 @@ body.role-viewer #quick-bar{display:none!important}
               <div class="tech-btn active" onclick="pickTech(this,'upd-paint-picker')">RC</div>
               <div class="tech-btn" onclick="pickTech(this,'upd-paint-picker')">Katty</div>
               <div class="tech-btn" onclick="pickTech(this,'upd-paint-picker')">Ami</div>
-              <div class="tech-btn" onclick="pickTech(this,'upd-paint-picker')">Ammar</div>
+              <div class="tech-btn" onclick="pickTech(this,'upd-paint-picker')">Ammar Ali</div>
               <div class="tech-btn" onclick="pickTech(this,'upd-paint-picker')">John</div>
               <div class="tech-btn" onclick="pickTech(this,'upd-paint-picker')">—</div>
             </div>
@@ -1070,7 +1070,7 @@ body.role-viewer #quick-bar{display:none!important}
               <div class="tech-btn" onclick="pickTech(this,'int-paint-picker')">RC</div>
               <div class="tech-btn" onclick="pickTech(this,'int-paint-picker')">Katty</div>
               <div class="tech-btn" onclick="pickTech(this,'int-paint-picker')">Ami</div>
-              <div class="tech-btn" onclick="pickTech(this,'int-paint-picker')">Ammar</div>
+              <div class="tech-btn" onclick="pickTech(this,'int-paint-picker')">Ammar Ali</div>
               <div class="tech-btn" onclick="pickTech(this,'int-paint-picker')">John</div>
               <div class="tech-btn" onclick="pickTech(this,'int-paint-picker')">—</div>
             </div>
@@ -1133,7 +1133,7 @@ body.role-viewer #quick-bar{display:none!important}
             <div class="tech-btn" onclick="pickTech(this,'sched-paint-picker')">RC</div>
             <div class="tech-btn" onclick="pickTech(this,'sched-paint-picker')">Katty</div>
             <div class="tech-btn" onclick="pickTech(this,'sched-paint-picker')">Ami</div>
-            <div class="tech-btn" onclick="pickTech(this,'sched-paint-picker')">Ammar</div>
+            <div class="tech-btn" onclick="pickTech(this,'sched-paint-picker')">Ammar Ali</div>
             <div class="tech-btn" onclick="pickTech(this,'sched-paint-picker')">John</div>
             <div class="tech-btn" onclick="pickTech(this,'sched-paint-picker')">—</div>
           </div>
@@ -1272,7 +1272,7 @@ window.addEventListener('load',()=>{
 });
 
 /* ── CONSTANTS ─────────────────────────────────── */
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwjK5gNWbOGvkZ_J0KN-9jyLpdLfVGW-H75SRAr2LnXNa0KiQU7wgw8OwwC3jfTmblklg/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxfxKMAbFsU1sUmDHAmQR9ptLN91ePFNLkiRRpdEOdI8RmHpdKmg50wVR_NJ9_ezfwIEA/exec';
 
 const PILL_CLASS = {
   'WIP':'s-wip','In Progress':'s-inprog','In progress':'s-inprog',
@@ -1363,10 +1363,9 @@ function parseJobDate(s) {
   return null;
 }
 
-// Get the upcoming/schedule date for a job
-// WIP jobs: OUT col = scheduled repair date
-// NJL jobs: schedDate col = scheduled repair date
 function getUpcomingDate(j){
+  // WIP jobs: OUT col = scheduled repair date
+  // NJL jobs: schedDate col = scheduled repair date
   return parseJobDate(j.schedDate)
       || (j.source==='WIP' ? parseJobDate(j.out) : null)
       || parseJobDate(j.inD);
@@ -1381,20 +1380,17 @@ function getUpcomingDate(j){
   const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   return String(+m[3]).padStart(2,'0') + '-' + MON[+m[2]-1] + '-' + m[1];
 }
-
-// Defensive parts date formatter — handles raw JS Date strings from Sheets
 function fmtPartsDate(s){
   if(!s) return '—';
-  const str = String(s).trim();
-  if(str.match(/^\d{1,2}-[A-Za-z]{3}-\d{4}$/)) return str; // already dd-MMM-yyyy
-  const d = parseJobDate(str);
-  if(d && !isNaN(d.getTime())){
+  const str=String(s).trim();
+  if(str.match(/^\d{1,2}-[A-Za-z]{3}-\d{4}$/)) return str;
+  const d=parseJobDate(str);
+  if(d&&!isNaN(d.getTime())){
     const M=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     return String(d.getDate()).padStart(2,'0')+'-'+M[d.getMonth()]+'-'+d.getFullYear();
   }
   return str;
 }
-
 function makePill(st){
   if(!st) return `<span class="pill s-hold">—</span>`;
   if(PILL_CLASS[st]) return `<span class="pill ${PILL_CLASS[st]}">${st}</span>`;
@@ -1538,8 +1534,12 @@ function _setTechPicker(pickerId, techName){
   if(!techName) return;
   const picker = document.getElementById(pickerId);
   if(!picker) return;
+  const name = techName.trim().toLowerCase();
   picker.querySelectorAll('.tech-btn').forEach(b=>{
-    if(b.textContent.trim() === techName) b.classList.add('active');
+    const btn = b.textContent.trim().toLowerCase();
+    // Match if identical OR if one contains the other (handles 'Ammar' vs 'Ammar Ali')
+    const match = btn === name || btn.includes(name) || name.includes(btn);
+    if(match && btn !== '—') b.classList.add('active');
     else b.classList.remove('active');
   });
 }
@@ -1782,6 +1782,47 @@ function selectCalDay(el, key){
   el.classList.add('selected');
   const evs = CAL_EVENTS[key]||[];
   document.getElementById('upcoming-title').textContent = evs.length ? `Events on ${key}` : `No events — ${key}`;
+  // Filter upcoming table to show only jobs for the selected day
+  renderUpcomingTableForDay(key);
+}
+
+function renderUpcomingTableForDay(isoKey){
+  // isoKey = "2026-05-11"
+  const sel = isoKey ? parseJobDate(isoKey) : null;
+  const tbody = document.getElementById('upcoming-tbody');
+  if(!tbody) return;
+
+  // Get jobs matching this day across inD, out, schedDate
+  let dayJobs = [];
+  if(sel){
+    dayJobs = JOBS.filter(j=>{
+      const sl=(j.st||'').toLowerCase();
+      if(j.source==='Archive'||j.source==='Cancelled') return false;
+      const dIn    = parseJobDate(j.inD);
+      const dOut   = parseJobDate(j.out);
+      const dSched = parseJobDate(j.schedDate);
+      const dMatch = (d) => d && d.getFullYear()===sel.getFullYear() && d.getMonth()===sel.getMonth() && d.getDate()===sel.getDate();
+      return dMatch(dIn)||dMatch(dOut)||dMatch(dSched);
+    });
+  }
+
+  if(!dayJobs.length){
+    tbody.innerHTML=`<tr><td colspan="6" style="padding:20px;text-align:center;color:var(--hint);font-size:12px">No jobs on this date</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML=dayJobs.map(u=>{
+    const d = parseJobDate(u.schedDate)||parseJobDate(u.inD)||(u.source==='WIP'?parseJobDate(u.out):null);
+    const dateStr = d ? String(d.getDate()).padStart(2,'0')+'-'+['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()]+'-'+d.getFullYear() : 'TBD';
+    return `<tr onclick="openUpdateModal(${JSON.stringify(u).replace(/"/g,'&quot;')})">
+      <td class="mono">${dateStr}</td>
+      <td><div class="j-name">${u.n}</div></td>
+      <td style="font-size:11px;color:var(--mut)">${u.v}</td>
+      <td>${makeTag(u.type)}</td>
+      <td style="font-size:11px;color:var(--mut)">${u.body}</td>
+      <td>${fmtDate(u.out)}</td>
+    </tr>`;
+  }).join('');
 }
 
 document.getElementById('cal-prev').onclick = ()=>{ if(calMonth===0){calMonth=11;calYear--;}else calMonth--; renderCalendar(); };
@@ -1796,12 +1837,12 @@ function renderUpcomingTable(){
     const sl = (j.st||'').toLowerCase();
     if(sl.includes('picked up')||sl.includes('cancel')||sl.includes('total loss')) return false;
     if(j.source==='Archive'||j.source==='Cancelled') return false;
-    const d = getUpcomingDate(j);
+    const d = parseJobDate(j.schedDate)||parseJobDate(j.inD);
     if(!d||isNaN(d.getTime())) return false;
     return d >= now && d <= cutoff;
   }).sort((a,b)=>{
-    const da = getUpcomingDate(a)||new Date(9e15);
-    const db = getUpcomingDate(b)||new Date(9e15);
+    const da = parseJobDate(a.schedDate)||parseJobDate(a.inD)||new Date(9e15);
+    const db = parseJobDate(b.schedDate)||parseJobDate(b.inD)||new Date(9e15);
     return da-db;
   });
 
@@ -1813,7 +1854,7 @@ function renderUpcomingTable(){
   document.getElementById('upcoming-tbody').innerHTML = upcoming.map(u=>{
     // Show IN/sched date in the date column — NOT the out/completion date
     const d_disp = getUpcomingDate(u);
-    const inDateStr = d_disp ? String(d_disp.getDate()).padStart(2,'0')+'-'+['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d_disp.getMonth()]+'-'+d_disp.getFullYear() : (u.schedDate||u.inD||'TBD');
+    const inDateStr = d_disp ? String(d_disp.getDate()).padStart(2,'0')+'-'+MON[d_disp.getMonth()]+'-'+d_disp.getFullYear() : (u.schedDate||u.inD||'TBD');
     return `<tr>
       <td class="mono">${inDateStr}</td>
       <td><div class="j-name">${u.n}</div></td>
@@ -2073,7 +2114,14 @@ function normaliseJob(j){
     st:        st,
     out:       j.outDate  || j.schedDate || 'TBD',
     cc:        j.cc       || '',
-    type:      (j.po||'').toLowerCase()==='private'||(!j.claim&&!j.wo) ? 'Private' : 'ICBC',
+    type:      (() => {
+      const po = (j.po||'').toLowerCase();
+      if(po==='private') return 'Private';
+      if(po==='turo') return 'Turo';
+      if(po==='worksafe') return 'WorkSafe BC';
+      if(po && po!=='icbc' && !j.claim) return 'Private';
+      return 'ICBC';
+    })(),
     inD:       j.inDate   || '',
     schedDate: j.schedDate|| '',
     body:      j.bodyTech || '',
@@ -2155,9 +2203,24 @@ function applyLiveCCStatus(ccStatus, ccInUse){
     const info = ccStatus ? ccStatus[plate] : null;
     const isActive = info && info.active === true;
     if(isActive) inUse++; else avail++;
+    // Format inDate cleanly — may arrive as raw JS Date string
+    let ccDaysLabel = null;
+    if(isActive){
+      if(info.inDate){
+        const d = parseJobDate(info.inDate) || new Date(info.inDate);
+        if(d && !isNaN(d.getTime())){
+          const M=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+          ccDaysLabel = 'Since '+String(d.getDate()).padStart(2,'0')+'-'+M[d.getMonth()]+'-'+d.getFullYear();
+        } else {
+          ccDaysLabel = 'Since '+info.inDate;
+        }
+      } else {
+        ccDaysLabel = 'In use';
+      }
+    }
     FLEET.push({plate, stat:isActive?'inuse':'avail',
       cust:isActive?(info.name||null):null,
-      days:isActive?(info.inDate?'Since '+info.inDate:'In use'):null});
+      days:ccDaysLabel});
   });
   const total = FLEET_ORDER.length;
   const nAvail=document.getElementById('fleet-n-avail'); if(nAvail) nAvail.textContent=avail;
@@ -2232,10 +2295,6 @@ function renderCalendarEvents(){
     addEv(j.inD,       'in',    shortName+' IN');
     addEv(j.out,       'out',   shortName+' OUT');
     addEv(j.schedDate, 'sched', shortName+' sched');
-    // WIP jobs: OUT col = scheduled repair date — also mark as sched
-    if(j.source==='WIP' && j.out && j.out!=='TBD' && j.out!==j.schedDate){
-      addEv(j.out, 'sched', shortName+' sched');
-    }
   });
 
   renderCalendar();
