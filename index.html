@@ -665,7 +665,7 @@ body.role-viewer #quick-bar{display:none!important}
         <option>ICBC</option><option>Private</option><option>Pvt. Insurance</option><option>Turo</option><option>WorkSafe BC</option>
       </select>
       <div class="filter-sep"></div>
-      <span class="filter-label">IN date:</span>
+      <span class="filter-label" id="f-date-label">IN date:</span>
       <input type="date" id="f-from" onchange="filterJobs()" style="width:130px"/>
       <span class="filter-label">to</span>
       <input type="date" id="f-to" onchange="filterJobs()" style="width:130px"/>
@@ -1272,7 +1272,7 @@ window.addEventListener('load',()=>{
 });
 
 /* ── CONSTANTS ─────────────────────────────────── */
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzqWuK7zaxmN_h4XpyZaxPP09sSccjexNgTMYKtMoVPKMms3G1bRNsJ15tl9cj9bryF/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxfxKMAbFsU1sUmDHAmQR9ptLN91ePFNLkiRRpdEOdI8RmHpdKmg50wVR_NJ9_ezfwIEA/exec';
 
 const PILL_CLASS = {
   'WIP':'s-wip','In Progress':'s-inprog','In progress':'s-inprog',
@@ -1435,6 +1435,9 @@ function navTo(pageId, triggerEl){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   const navEl = triggerEl || document.querySelector(`.nav-item[data-page="${pageId}"]`);
   if(navEl) navEl.classList.add('active');
+
+  // Re-render calendar when navigating to schedule (ensures dots show after data loads)
+  if(pageId==='schedule' && typeof renderCalendarEvents === 'function') renderCalendarEvents();
 }
 
 document.querySelectorAll('.nav-item').forEach(item=>{
@@ -1660,6 +1663,9 @@ let selectedRow = null;
 function filterJobs(){
   const q    = (document.getElementById('f-query').value||'').toLowerCase().trim();
   const st   = document.getElementById('f-status').value;
+  // Update date label based on status filter
+  const dateLbl = document.getElementById('f-date-label');
+  if(dateLbl) dateLbl.textContent = (st==='scheduled') ? 'Sched date:' : 'IN date:';
   const type = document.getElementById('f-type').value;
   const ph   = (document.getElementById('f-phone').value||'').trim();
   const from = document.getElementById('f-from').value;
@@ -1670,9 +1676,17 @@ function filterJobs(){
     if(type && j.type !== type) return false;
     if(ph && !(j.phone||'').endsWith(ph)) return false;
     if(from||to){
-      const d = parseJobDate(j.inD);
+      // For scheduled filter: use the schedule/repair date (schedDate or OUT)
+      // For all others: use the IN date (car arrival date)
+      const stVal = document.getElementById('f-status').value;
+      let d;
+      if(stVal === 'scheduled'){
+        d = parseJobDate(j.schedDate) || (j.source==='WIP' ? parseJobDate(j.out) : null) || parseJobDate(j.inD);
+      } else {
+        d = parseJobDate(j.inD);
+      }
       if(d){
-        const iso = d.toISOString().slice(0,10);
+        const iso = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
         if(from && iso < from) return false;
         if(to   && iso > to)   return false;
       }
@@ -1687,7 +1701,18 @@ function filterJobs(){
         case 'est_approved':  if(!s.includes('approved')&&!s.includes('3 –')&&!s.includes('3–')) return false; break;
         case 'parts_ordered': if((!s.includes('order')&&!s.includes('4 –')&&!s.includes('4–'))||s.includes('arrived')) return false; break;
         case 'parts_arrived': if(!s.includes('arrived')&&!s.includes('5 –')&&!s.includes('5–')) return false; break;
-        case 'scheduled':     if(!s.includes('schedule')&&!s.includes('6 –')&&!s.includes('6–')) return false; if(s.includes('picked up')||s.includes('9 –')||s.includes('cancel')) return false; break;
+        case 'scheduled': {
+          if(!s.includes('schedule')&&!s.includes('6 –')&&!s.includes('6–')) return false;
+          if(s.includes('picked up')||s.includes('9 –')||s.includes('cancel')) return false;
+          // Exclude NJL stage-6 jobs where schedDate is >7 days in the past
+          // (these were scheduled, car came in, WIP took over — NJL stale)
+          if(j.source==='NJL' && s.includes('6 –')){
+            const schedD = parseJobDate(j.schedDate) || parseJobDate(j.inD);
+            const cutoff = new Date(nowVancouver().getTime() - 7*86400000);
+            if(schedD && schedD < cutoff) return false;
+          }
+          break;
+        }
         case 'wip':           if(!s.includes('wip')&&!s.includes('in progress')) return false; break;
         case 'outstanding':   if(!s.includes('outstanding')&&!s.includes('balance')) return false; break;
         case 'refix':         if(!s.includes('refix')&&!s.includes('comeback')) return false; break;
@@ -1725,7 +1750,7 @@ function renderSearchJobs(){
       <td><div class="mono">${j.wo}</div><div class="mono" style="color:var(--hint);font-size:10px">${j.cl||'—'}</div></td>
       <td>${makePill(j.st)}</td>
       <td style="font-size:11px;color:var(--mut)">${j.type}</td>
-      <td>${fmtDate(j.inD)}</td>
+      <td>${fmtDate(j.source==='NJL' && j.schedDate ? j.schedDate : j.inD)}</td>
       <td>${fmtDate(j.out)}</td>
       <td style="font-size:11px;color:var(--mut)">${j.body}</td>
       <td style="font-size:11px;color:var(--mut)">${j.paint}</td>
@@ -2710,15 +2735,16 @@ setInterval(()=>{
   if(!document.hidden) loadLiveData();
 }, 5 * 60 * 1000);
 
-// Fallback: if calendar is empty 3s after load, retry renderCalendarEvents
-// (handles race condition where cal renders before JOBS is populated)
-setTimeout(()=>{
-  const hasEvents = Object.keys(CAL_EVENTS).length > 0;
-  if(!hasEvents && JOBS.length > 0){
-    console.log('[Calendar] Retry: JOBS loaded but CAL_EVENTS empty — re-rendering');
+// Fallback retries: if calendar is empty after data loads, retry
+// (handles race conditions on slow connections)
+function _retryCalendar(){
+  if(Object.keys(CAL_EVENTS).length === 0 && JOBS.length > 0){
     renderCalendarEvents();
   }
-}, 3000);
+}
+setTimeout(_retryCalendar, 2000);
+setTimeout(_retryCalendar, 5000);
+setTimeout(_retryCalendar, 10000);
 
 // Show keyboard shortcut hint in topbar on ?
 document.addEventListener('keydown', e=>{
