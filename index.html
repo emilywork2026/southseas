@@ -1265,14 +1265,14 @@ window.addEventListener('load',()=>{
   if(saved){
     applySession(saved);
     document.getElementById('login-screen').classList.add('hidden');
-    // Don't call loadLiveData() here — init already ran it at bottom of script
+    loadLiveData(); // Load data now that we have a valid session
   } else {
     setTimeout(()=>{ const u=document.getElementById('login-username'); if(u) u.focus(); },120);
   }
 });
 
 /* ── CONSTANTS ─────────────────────────────────── */
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzrUeWAHQizv1oy9vZlpxoi8C3JxfHyRu1g6I6NP4rvulrjxuhKA_n8fTYfZVF5MXlMNQ/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxfxKMAbFsU1sUmDHAmQR9ptLN91ePFNLkiRRpdEOdI8RmHpdKmg50wVR_NJ9_ezfwIEA/exec';
 
 const PILL_CLASS = {
   'WIP':'s-wip','In Progress':'s-inprog','In progress':'s-inprog',
@@ -1837,12 +1837,12 @@ function renderUpcomingTable(){
     const sl = (j.st||'').toLowerCase();
     if(sl.includes('picked up')||sl.includes('cancel')||sl.includes('total loss')) return false;
     if(j.source==='Archive'||j.source==='Cancelled') return false;
-    const d = parseJobDate(j.schedDate)||parseJobDate(j.inD);
+    const d = getUpcomingDate(j);
     if(!d||isNaN(d.getTime())) return false;
     return d >= now && d <= cutoff;
   }).sort((a,b)=>{
-    const da = parseJobDate(a.schedDate)||parseJobDate(a.inD)||new Date(9e15);
-    const db = parseJobDate(b.schedDate)||parseJobDate(b.inD)||new Date(9e15);
+    const da = getUpcomingDate(a)||new Date(9e15);
+    const db = getUpcomingDate(b)||new Date(9e15);
     return da-db;
   });
 
@@ -2255,16 +2255,24 @@ async function loadPartsReturn(){
       PARTS.length = 0;
       res.rows.forEach(r=>{
         // v13 returns named-field objects; v12 returned raw arrays
+        let row;
         if(typeof r === 'object' && !Array.isArray(r) && r.returnDate !== undefined){
-          PARTS.push({dt:r.returnDate||'',wo:r.wo||'',dealer:r.dealership||'',
+          row = {dt:r.returnDate||'',wo:r.wo||'',dealer:r.dealership||'',
             invoice:r.invoice||'',part:r.partNumber||'',qty:r.qty||'',
             reason:r.reason||'',driver:r.driver||'',tracking:r.tracking||'',
-            credit:r.creditStatus||'',rowIndex:r.rowIndex||0});
+            credit:r.creditStatus||'',rowIndex:r.rowIndex||0};
         } else {
-          PARTS.push({dt:r[0]||'',wo:r[1]||'',dealer:r[2]||'',invoice:r[3]||'',
+          row = {dt:r[0]||'',wo:r[1]||'',dealer:r[2]||'',invoice:r[3]||'',
             part:r[4]||'',qty:r[5]||'',reason:r[6]||'',driver:r[7]||'',
-            tracking:r[8]||'',credit:r[9]||'',rowIndex:0});
+            tracking:r[8]||'',credit:r[9]||'',rowIndex:0};
         }
+        // Skip header/title rows that come from sheet row 1-2
+        const dtLow = String(row.dt||'').trim().toLowerCase();
+        const woLow = String(row.wo||'').trim().toLowerCase();
+        const isJunk = dtLow.includes('return') || dtLow.includes('parts') ||
+                       dtLow.includes('date') || woLow.includes('wo #') ||
+                       (dtLow==='' && woLow==='' && !row.dealer);
+        if(!isJunk) PARTS.push(row);
       });
       const pending = PARTS.filter(p=>(p.credit||'').toLowerCase().includes('pending')).length;
       document.querySelectorAll('.nav-badge.amber').forEach(el=>el.textContent=pending);
@@ -2284,9 +2292,9 @@ function renderCalendarEvents(){
       // Convert dd-MMM-yyyy to yyyy-mm-dd key
       const MONTHS={Jan:'01',Feb:'02',Mar:'03',Apr:'04',May:'05',Jun:'06',
                     Jul:'07',Aug:'08',Sep:'09',Oct:'10',Nov:'11',Dec:'12'};
-      const m = dateStr.match(/^(\d{2})-([A-Za-z]{3})-(\d{4})/);
+      const m = dateStr.match(/^(\d{1,2})-([A-Za-z]{3})-(\d{4})/);
       if(!m) return;
-      const key = `${m[3]}-${MONTHS[m[2]]||'01'}-${m[1]}`;
+      const key = `${m[3]}-${MONTHS[m[2]]||'01'}-${String(+m[1]).padStart(2,'0')}`;
       if(!CAL_EVENTS[key]) CAL_EVENTS[key]=[];
       // Avoid duplicates
       if(!CAL_EVENTS[key].some(e=>e.l===label)) CAL_EVENTS[key].push({t:type,l:label});
@@ -2677,13 +2685,17 @@ renderUpcomingMini();
 renderSearchJobs();
 renderCalendar();
 renderUpcomingTable();
-// renderFleet() — replaced by renderFleetEnhanced() below
+// Fleet rendered by renderFleetEnhanced() after applyLiveCCStatus populates FLEET
 renderTechs();
 renderParts();
 renderNotifs();
 
-// Pull live data on load (graceful — falls back to sample if unreachable)
-loadLiveData();
+// Pull live data on load — only if no session (session restore handles the rest)
+// Fresh login triggers loadLiveData() via doLogin()
+if(!getSession()) {
+  // Show login screen - no data to load yet
+  // loadLiveData will be called after login
+}
 
 // Refresh every 5 minutes while page is open
 setInterval(()=>{
@@ -2916,7 +2928,13 @@ document.querySelector('#page-parts .card-action').addEventListener('click', ope
   }
 })();
 function renderFleetEnhanced(){
-  document.getElementById('fleet-grid').innerHTML = FLEET.map(c=>`
+  const el = document.getElementById('fleet-grid');
+  if(!el) return;
+  if(!FLEET.length){
+    el.innerHTML = '<div style="grid-column:1/-1;padding:40px;text-align:center;color:var(--hint);font-size:12px">Loading fleet data…</div>';
+    return;
+  }
+  el.innerHTML = FLEET.map(c=>`
     <div class="fleet-card ${c.stat}">
       <div class="fleet-card-body">
         <div class="fleet-plate">${c.plate}</div>
