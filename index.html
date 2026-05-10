@@ -1272,7 +1272,7 @@ window.addEventListener('load',()=>{
 });
 
 /* ── CONSTANTS ─────────────────────────────────── */
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx7wq-vHsxmlsZLdYEgVgoO74QwXrYqoXfCWB0pUjl-lYCcRgUQ0sT1ib9zCunGlofWCw/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxfxKMAbFsU1sUmDHAmQR9ptLN91ePFNLkiRRpdEOdI8RmHpdKmg50wVR_NJ9_ezfwIEA/exec';
 
 const PILL_CLASS = {
   'WIP':'s-wip','In Progress':'s-inprog','In progress':'s-inprog',
@@ -1438,7 +1438,11 @@ function navTo(pageId, triggerEl){
 
   // Re-render on navigate to ensure live data shows (handles async load timing)
   if(pageId==='schedule' && typeof renderCalendarEvents === 'function') renderCalendarEvents();
-  if(pageId==='cars' && typeof renderFleetEnhanced === 'function') renderFleetEnhanced();
+  if(pageId==='cars'){
+    // Rebuild CC status fresh when navigating to fleet page
+    if(JOBS.length > 0) buildCCStatusFromJobs();
+    else if(typeof renderFleetEnhanced === 'function') renderFleetEnhanced();
+  }
 }
 
 document.querySelectorAll('.nav-item').forEach(item=>{
@@ -2184,8 +2188,8 @@ function applyJobsFromSearch(rawJobs){
   renderUpcomingTable();
   renderCalendarEvents();
   if(typeof buildNotifsFromJobs === 'function') buildNotifsFromJobs();
-  // Compute CC status from JOBS if getDashboard hasn't populated FLEET yet
-  if(FLEET.length === 0) buildCCStatusFromJobs();
+  // Always build CC status from JOBS immediately — getDashboard may override later
+  buildCCStatusFromJobs();
 }
 
 function applyDashboardCounts(counts){
@@ -2212,8 +2216,11 @@ function applyDashboardCounts(counts){
   });
 
   // ── Courtesy cars ───────────────────────────────────────
-  if(counts.ccStatus){
+  if(counts.ccStatus && Object.keys(counts.ccStatus).length > 0){
     applyLiveCCStatus(counts.ccStatus, counts.ccInUse||{});
+  } else {
+    // getDashboard didn't return ccStatus — build from JOBS
+    buildCCStatusFromJobs();
   }
 
   // ── Tech hours from dashboard techHours map ─────────────
