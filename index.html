@@ -1279,7 +1279,7 @@ window.addEventListener('load',()=>{
 });
 
 /* ── CONSTANTS ─────────────────────────────────── */
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyTMWijpSnGoCFeGBSPmZCG94a2tmUhwP1Q45NHz61sSvBS_hFXad0YXjL7I5xO2yv7lQ/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxfxKMAbFsU1sUmDHAmQR9ptLN91ePFNLkiRRpdEOdI8RmHpdKmg50wVR_NJ9_ezfwIEA/exec';
 
 const PILL_CLASS = {
   'WIP':'s-wip','In Progress':'s-inprog','In progress':'s-inprog',
@@ -1891,7 +1891,7 @@ function renderUpcomingTable(){
   document.getElementById('upcoming-tbody').innerHTML = upcoming.map(u=>{
     // Show IN/sched date in the date column — NOT the out/completion date
     const d_disp = getUpcomingDate(u);
-    const inDateStr = d_disp ? String(d_disp.getDate()).padStart(2,'0')+'-'+MON[d_disp.getMonth()]+'-'+d_disp.getFullYear() : (u.schedDate||u.inD||'TBD');
+    const inDateStr = d_disp ? String(d_disp.getDate()).padStart(2,'0')+'-'+MON3[d_disp.getMonth()]+'-'+d_disp.getFullYear() : (u.schedDate||u.inD||'TBD');
     return `<tr>
       <td class="mono">${inDateStr}</td>
       <td><div class="j-name">${u.n}</div></td>
