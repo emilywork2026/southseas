@@ -1279,7 +1279,7 @@ window.addEventListener('load',()=>{
 });
 
 /* ── CONSTANTS ─────────────────────────────────── */
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyAdgOgHEgUxlRh1Z-5XdwcKZiuu33QQMTiLWg8Y7FOf6KKUJSuHy_V_qcdvYfA1y5Z2Q/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxfxKMAbFsU1sUmDHAmQR9ptLN91ePFNLkiRRpdEOdI8RmHpdKmg50wVR_NJ9_ezfwIEA/exec';
 
 const PILL_CLASS = {
   'WIP':'s-wip','In Progress':'s-inprog','In progress':'s-inprog',
@@ -1309,6 +1309,7 @@ const PILL_CLASS = {
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const DAYS   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const MON3   = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 /* ── SAMPLE DATA ───────────────────────────────── */
 // ── All sample data cleared — populated exclusively from live Google Sheet ──
@@ -1891,7 +1892,7 @@ function renderUpcomingTable(){
   document.getElementById('upcoming-tbody').innerHTML = upcoming.map(u=>{
     // Show IN/sched date in the date column — NOT the out/completion date
     const d_disp = getUpcomingDate(u);
-    const inDateStr = d_disp ? String(d_disp.getDate()).padStart(2,'0')+'-'+MON3[d_disp.getMonth()]+'-'+d_disp.getFullYear() : (u.schedDate||u.inD||'TBD');
+    const _M=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']; const inDateStr = d_disp ? String(d_disp.getDate()).padStart(2,'0')+'-'+_M[d_disp.getMonth()]+'-'+d_disp.getFullYear() : (u.schedDate||u.inD||'TBD');
     return `<tr>
       <td class="mono">${inDateStr}</td>
       <td><div class="j-name">${u.n}</div></td>
