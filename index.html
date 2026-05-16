@@ -1279,7 +1279,7 @@ window.addEventListener('load',()=>{
 });
 
 /* ── CONSTANTS ─────────────────────────────────── */
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyyBg8VUQy2ZQqFDTQqHTh16WmVVHBfn5VMsPWu_q3iug859sh7yIAmGuJFb_QQnDpr1w/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxfxKMAbFsU1sUmDHAmQR9ptLN91ePFNLkiRRpdEOdI8RmHpdKmg50wVR_NJ9_ezfwIEA/exec';
 
 const PILL_CLASS = {
   'WIP':'s-wip','In Progress':'s-inprog','In progress':'s-inprog',
@@ -1447,10 +1447,10 @@ function navTo(pageId, triggerEl){
   // Re-render on navigate to ensure live data shows (handles async load timing)
   if(pageId==='schedule' && typeof renderCalendarEvents === 'function') renderCalendarEvents();
   if(pageId==='cars'){
-    // Rebuild CC status fresh when navigating to fleet page
     if(JOBS.length > 0) buildCCStatusFromJobs();
     else if(typeof renderFleetEnhanced === 'function') renderFleetEnhanced();
   }
+  if(pageId==='techs') loadTechHours();
 }
 
 document.querySelectorAll('.nav-item').forEach(item=>{
@@ -1596,14 +1596,8 @@ function pickNotify(el){
   el.classList.add('active');
 }
 
-function saveUpdate(){
-  closeModal('update-modal');
-}
-function saveIntake(){
-  const name = document.getElementById('int-name').value.trim();
-  if(!name){ document.getElementById('int-name').focus(); return; }
-  closeModal('intake-modal');
-}
+// saveUpdate defined below
+// saveIntake defined below
 
 /* ── RENDER: DASHBOARD JOBS ─────────────────────── */
 function renderDashJobs(){
@@ -1773,15 +1767,7 @@ function renderSearchJobs(){
   document.getElementById('search-count-text').textContent = `${filteredJobs.length} job${filteredJobs.length!==1?'s':''} shown`;
 }
 
-function selectRow(i){
-  document.querySelectorAll('#search-jobs tr').forEach(r=>r.classList.remove('selected'));
-  const row = document.getElementById('srow-'+i);
-  if(row){
-    row.classList.add('selected');
-    document.getElementById('update-selected-btn').style.display='';
-    openUpdateModal(filteredJobs[i]);
-  }
-}
+// selectRow defined below with setSelectedJob
 
 /* ── RENDER: CALENDAR ───────────────────────────── */
 const _vanNow = nowVancouver();
@@ -1954,6 +1940,75 @@ function renderTechs(){
   }).join('');
 }
 
+/* ── RENDER: WEEKLY HOURS TABLE ─────────────────── */
+function renderWeeklyHoursTable(weeks, forecast){
+  var card = document.getElementById('weekly-hours-card');
+  if(!card){
+    var page = document.getElementById('page-techs');
+    if(!page) return;
+    card = document.createElement('div');
+    card.id = 'weekly-hours-card';
+    card.className = 'card';
+    card.style.marginTop = '14px';
+    page.appendChild(card);
+  }
+  var recentWeeks = weeks.slice(-8);
+  var allRows = recentWeeks.concat(
+    forecast.length ? [{week:'── FORECAST ──',b:'',p:'',total:'',jobs:'',isSep:true}].concat(forecast) : []
+  );
+  var maxH = 1;
+  allRows.forEach(function(w){ if(!w.isSep && +w.total > maxH) maxH = +w.total; });
+
+  var tbody = allRows.map(function(w){
+    if(w.isSep) return [
+      '<tr><td colspan="6" style="padding:6px 12px;color:var(--pur);font-size:10px;',
+      'font-weight:600;text-transform:uppercase;letter-spacing:.5px;',
+      'background:rgba(139,92,246,.06);border-bottom:1px solid var(--bdr)">',
+      w.week,'</td></tr>'
+    ].join('');
+    var isForecast = forecast.some(function(f){return f.week===w.week;});
+    var pct = Math.round((+w.total||0)/maxH*100);
+    var avg = w.jobs ? Math.round((+w.total||0)/w.jobs*10)/10 : 0;
+    var col = isForecast ? 'var(--pur)' : 'var(--grn)';
+    var txCol = isForecast ? 'var(--pur)' : 'var(--tx)';
+    var fw = isForecast ? '500' : '400';
+    // Use data attributes to avoid quote nesting issues
+    var barDiv = '<div style="height:3px;background:var(--bdr);border-radius:2px;margin-top:4px;overflow:hidden">'
+               + '<div style="height:100%;width:'+pct+'%;background:'+col+'"></div></div>';
+    var monoStyle = 'text-align:right;font-family:monospace;font-size:11px';
+    return '<tr>'
+      + '<td><div style="font-size:11.5px;color:'+txCol+';font-weight:'+fw+'">'+w.week+'</div>'+barDiv+'</td>'
+      + '<td style="'+monoStyle+';color:var(--blu)">'+w.b+'h</td>'
+      + '<td style="'+monoStyle+';color:var(--acc)">'+w.p+'h</td>'
+      + '<td style="'+monoStyle+';font-size:11.5px;color:'+txCol+';font-weight:500">'+w.total+'h</td>'
+      + '<td style="text-align:right;font-size:11px;color:var(--mut)">'+w.jobs+'</td>'
+      + '<td style="text-align:right;font-size:11px;color:var(--hint)">'+avg+'h</td>'
+      + '</tr>';
+  }).join('');
+
+  var legendForecast = forecast.length
+    ? '<div class="legend-item"><div class="legend-dot" style="background:var(--pur)"></div>Forecast</div>'
+    : '';
+
+  card.innerHTML = '<div class="card-head">'
+    + '<div class="card-title">Weekly hours breakdown</div>'
+    + '<div style="display:flex;gap:10px;margin-left:auto">'
+    + '<div class="legend-item"><div class="legend-dot" style="background:var(--blu)"></div>Body</div>'
+    + '<div class="legend-item"><div class="legend-dot" style="background:var(--acc)"></div>Paint</div>'
+    + legendForecast
+    + '</div></div>'
+    + '<div style="overflow-x:auto"><table class="job-table">'
+    + '<thead><tr>'
+    + '<th style="width:35%">Week</th>'
+    + '<th style="width:15%;text-align:right">Body</th>'
+    + '<th style="width:15%;text-align:right">Paint</th>'
+    + '<th style="width:15%;text-align:right">Total</th>'
+    + '<th style="width:10%;text-align:right">Jobs</th>'
+    + '<th style="width:10%;text-align:right">Avg/job</th>'
+    + '</tr></thead>'
+    + '<tbody>' + tbody + '</tbody></table></div>';
+}
+
 /* ── RENDER: PARTS RETURNS ──────────────────────── */
 function renderParts(){
   const tbody = document.getElementById('parts-tbody');
@@ -2111,6 +2166,22 @@ async function sortWIPSheet(){
   }
 }
 
+async function loadTechHours(){
+  if(!getSession()) return;
+  try {
+    const [techRes, weekRes] = await Promise.all([
+      apiFetch('getTechHours'),
+      apiFetch('getWeeklyHours'),
+    ]);
+    if(techRes && techRes.ok && techRes.techHours) {
+      applyLiveTechHours(techRes.techHours);
+    }
+    if(weekRes && weekRes.ok) {
+      renderWeeklyHoursTable(weekRes.weeks || [], weekRes.forecast || []);
+    }
+  } catch(e){ console.warn('loadTechHours:', e); }
+}
+
 async function loadLiveData(force=false){
   if(!getSession()) return;
   showLoadingBar(true);
@@ -2123,6 +2194,10 @@ async function loadLiveData(force=false){
 
     // Parts return loads separately (not blocking dashboard render)
     loadPartsReturn();
+    // Load tech hours if on the techs page
+    if(document.getElementById('page-techs')&&document.getElementById('page-techs').classList.contains('active')){
+      loadTechHours();
+    }
 
     let dataOk = false;
 
