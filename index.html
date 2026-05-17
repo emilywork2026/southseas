@@ -2173,11 +2173,17 @@ async function loadTechHours(){
       apiFetch('getTechHours'),
       apiFetch('getWeeklyHours'),
     ]);
-    if(techRes && techRes.ok && techRes.techHours) {
-      applyLiveTechHours(techRes.techHours);
+
+    // Accept common response shapes from Apps Script to avoid silent UI misses
+    const techHours = techRes && (techRes.techHours || techRes.data || techRes.hours);
+    if(techRes && (techRes.ok !== false) && techHours && typeof techHours === 'object') {
+      applyLiveTechHours(techHours);
     }
-    if(weekRes && weekRes.ok) {
-      renderWeeklyHoursTable(weekRes.weeks || [], weekRes.forecast || []);
+
+    const weeks = weekRes && (weekRes.weeks || weekRes.weeklyHours || weekRes.data || []);
+    const forecast = weekRes && (weekRes.forecast || weekRes.projection || []);
+    if(weekRes && (weekRes.ok !== false)) {
+      renderWeeklyHoursTable(Array.isArray(weeks) ? weeks : [], Array.isArray(forecast) ? forecast : []);
     }
   } catch(e){ console.warn('loadTechHours:', e); }
 }
